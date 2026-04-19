@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'react-native';
@@ -14,13 +15,17 @@ import { Typography } from '@/constants/Typography';
 import { Layout } from '@/constants/Layout';
 import { BODY_PARTS, BODY_PART_KEYS, type BodyPartKey } from '@/types/bodyParts';
 import { useMeasurements } from '@/contexts/MeasurementContext';
+import { useI18n } from '@/i18n';
 import { convertValue, getDisplayUnit } from '@/utils/conversions';
 
 export default function ProfileScreen() {
+  const router = useRouter();
   const { user, goals, updateUser, setGoal } = useUser();
   const { latestMeasurements } = useMeasurements();
   const { colors, mode, setMode } = useTheme();
+  const { t, lang, setLang } = useI18n();
   const themeModeIndex = mode === 'light' ? 0 : mode === 'dark' ? 1 : 2;
+  const langIndex = lang === 'en' ? 0 : 1;
 
   const [name, setName] = useState(user.name);
   const [heightCm, setHeightCm] = useState(user.heightCm?.toString() || '');
@@ -153,8 +158,18 @@ export default function ProfileScreen() {
           />
         </Card>
 
+        {/* Language */}
+        <Card style={styles.card}>
+          <Text style={styles.label}>{t.profile.language}</Text>
+          <SegmentedControl
+            options={['English', 'Espanol']}
+            selectedIndex={langIndex}
+            onSelect={(i) => setLang(i === 0 ? 'en' : 'es')}
+          />
+        </Card>
+
         {/* Goals */}
-        <Text style={styles.sectionTitle}>Goals</Text>
+        <Text style={styles.sectionTitle}>{t.profile.goals}</Text>
         {BODY_PART_KEYS.map((key) => {
           const partDef = BODY_PARTS[key];
           const displayUnit = getDisplayUnit(partDef.unit, user.unitSystem);
@@ -246,7 +261,30 @@ export default function ProfileScreen() {
           </Text>
         </Card>
 
-        <Text style={styles.version}>FitForge v1.0.0</Text>
+        {/* Logout / Reset */}
+        <Pressable
+          style={[styles.logoutBtn, { borderColor: Colors.error }]}
+          onPress={() => {
+            Alert.alert(
+              t.profile.logout,
+              t.profile.logoutConfirm,
+              [
+                { text: t.common.cancel, style: 'cancel' },
+                {
+                  text: 'OK',
+                  onPress: () => router.replace('/onboarding'),
+                },
+              ]
+            );
+          }}
+        >
+          <Ionicons name="log-out-outline" size={20} color={Colors.error} />
+          <Text style={[styles.logoutText, { color: Colors.error }]}>{t.profile.logout}</Text>
+        </Pressable>
+
+        {/* Footer */}
+        <Text style={styles.footerDisclaimer}>{t.disclaimer}</Text>
+        <Text style={styles.version}>{t.profile.version}</Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -317,8 +355,18 @@ const styles = StyleSheet.create({
     ...Typography.bodySmall, color: Colors.textSecondary,
     textAlign: 'center', marginTop: Layout.spacing.xs,
   },
+  logoutBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: Layout.spacing.sm, paddingVertical: 14, marginTop: Layout.spacing.lg,
+    borderRadius: Layout.cardBorderRadius, borderWidth: 1,
+  },
+  logoutText: { ...Typography.body, fontWeight: '600' },
+  footerDisclaimer: {
+    ...Typography.caption, color: Colors.textMuted,
+    textAlign: 'center', marginTop: Layout.spacing.lg, lineHeight: 18,
+  },
   version: {
     ...Typography.caption, color: Colors.textMuted,
-    textAlign: 'center', marginTop: Layout.spacing.xl,
+    textAlign: 'center', marginTop: Layout.spacing.sm,
   },
 });

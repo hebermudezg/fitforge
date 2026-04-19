@@ -6,6 +6,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
 import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
+import { I18nProvider } from '@/i18n';
 import { DatabaseProvider } from '@/contexts/DatabaseContext';
 import { UserProvider } from '@/contexts/UserContext';
 import { MeasurementProvider } from '@/contexts/MeasurementContext';
@@ -38,7 +39,9 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider>
-      <RootLayoutNav />
+      <I18nProvider>
+        <RootLayoutNav />
+      </I18nProvider>
     </ThemeProvider>
   );
 }
