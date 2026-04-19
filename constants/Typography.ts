@@ -14,6 +14,5 @@ export const Typography = {
   numeric: {
     fontSize: 32,
     fontWeight: '700' as const,
-    fontVariant: ['tabular-nums'] as const,
   },
 } as const;

@@ -6,6 +6,9 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
 import { Colors } from '@/constants/Colors';
+import { DatabaseProvider } from '@/contexts/DatabaseContext';
+import { UserProvider } from '@/contexts/UserContext';
+import { MeasurementProvider } from '@/contexts/MeasurementContext';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -54,6 +57,9 @@ export default function RootLayout() {
 function RootLayoutNav() {
   return (
     <ThemeProvider value={FitForgeTheme}>
+      <DatabaseProvider>
+        <UserProvider>
+          <MeasurementProvider>
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen
@@ -87,6 +93,9 @@ function RootLayoutNav() {
           }}
         />
       </Stack>
+          </MeasurementProvider>
+        </UserProvider>
+      </DatabaseProvider>
     </ThemeProvider>
   );
 }
