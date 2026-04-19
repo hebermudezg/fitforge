@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import * as SQLite from 'expo-sqlite';
 import { runMigrations } from '@/database/migrations';
+import { seedDatabase } from '@/database/seedData';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { Colors } from '@/constants/Colors';
 
@@ -20,6 +21,7 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
       const database = await SQLite.openDatabaseAsync('fitforge.db');
       await database.execAsync('PRAGMA journal_mode = WAL;');
       await runMigrations(database);
+      await seedDatabase(database);
       setDb(database);
     })();
   }, []);

@@ -3,7 +3,6 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Card } from '@/components/ui/Card';
 import { useMeasurements } from '@/contexts/MeasurementContext';
 import { useUser } from '@/contexts/UserContext';
@@ -11,10 +10,10 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useI18n } from '@/i18n';
 import { Typography } from '@/constants/Typography';
 import { Layout } from '@/constants/Layout';
-import { BODY_PARTS, type BodyPartKey } from '@/types/bodyParts';
+import { BODY_PARTS, BODY_PART_KEYS, type BodyPartKey } from '@/types/bodyParts';
 import { convertValue, getDisplayUnit } from '@/utils/conversions';
 import { getRelativeDate } from '@/utils/formatting';
-import { getTodayWorkout, type Exercise } from '@/constants/exercises';
+import { getTodayWorkout } from '@/constants/exercises';
 import { getDailyQuote, getGreeting } from '@/constants/quotes';
 
 export default function DashboardScreen() {
@@ -25,185 +24,157 @@ export default function DashboardScreen() {
   const { latestMeasurements, recentMeasurements } = useMeasurements();
 
   const greeting = getGreeting(lang);
-  const userName = user.name || '';
   const quote = getDailyQuote();
   const todayWorkout = getTodayWorkout();
   const isRestDay = todayWorkout.muscleGroup === 'rest';
 
-  // Quick stats
   const weightM = latestMeasurements.weight;
   const bodyFatM = latestMeasurements.bodyFat;
-  const weightDisplay = weightM ? convertValue(weightM.value, 'kg', user.unitSystem) : null;
+  const weightVal = weightM ? convertValue(weightM.value, 'kg', user.unitSystem) : null;
   const weightUnit = getDisplayUnit('kg', user.unitSystem);
+
+  // Count measured body parts
+  const measuredCount = Object.keys(latestMeasurements).length;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-        {/* Header */}
-        <Text style={[styles.logo, { color: colors.accent }]}>FitForge</Text>
-        <Text style={[styles.greeting, { color: colors.textSecondary }]}>
-          {greeting}{userName ? `, ${userName}` : ''}! 💪
-        </Text>
 
-        {/* Daily motivational quote */}
-        <View style={[styles.quoteCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <Ionicons name="flash" size={16} color={colors.accent} />
-          <View style={styles.quoteContent}>
-            <Text style={[styles.quoteText, { color: colors.textPrimary }]}>
-              "{quote.text[lang]}"
+        {/* Header + Quote */}
+        <View style={styles.headerSection}>
+          <Text style={[styles.logo, { color: colors.accent }]}>FitForge</Text>
+          <Text style={[styles.greeting, { color: colors.textSecondary }]}>
+            {greeting}{user.name ? `, ${user.name}` : ''}
+          </Text>
+        </View>
+
+        <View style={[styles.quoteCard, { backgroundColor: colors.accent + '12', borderColor: colors.accent + '30' }]}>
+          <Text style={[styles.quoteText, { color: colors.textPrimary }]}>
+            "{quote.text[lang]}"
+          </Text>
+          <Text style={[styles.quoteAuthor, { color: colors.accent }]}>— {quote.author}</Text>
+        </View>
+
+        {/* Today's Workout - compact */}
+        <Pressable
+          style={[styles.workoutBanner, { backgroundColor: colors.surface, borderColor: colors.border }]}
+          onPress={() => {/* TODO: navigate to workout detail */}}
+        >
+          <View style={[styles.workoutIconBg, { backgroundColor: colors.accent + '20' }]}>
+            <Ionicons name={isRestDay ? 'bed-outline' : todayWorkout.icon as any} size={24} color={colors.accent} />
+          </View>
+          <View style={styles.workoutInfo}>
+            <Text style={[styles.workoutTitle, { color: colors.textPrimary }]}>
+              {isRestDay ? t.dashboard.restDay : todayWorkout.label[lang]}
             </Text>
-            <Text style={[styles.quoteAuthor, { color: colors.accent }]}>
-              — {quote.author}
+            <Text style={[styles.workoutSub, { color: colors.textMuted }]}>
+              {isRestDay
+                ? t.dashboard.restDayDesc
+                : `${todayWorkout.exercises.length} ${t.dashboard.exercises}`}
+            </Text>
+          </View>
+          {!isRestDay && <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />}
+        </Pressable>
+
+        {/* Body Stats Grid */}
+        <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
+          {t.dashboard.quickStats}
+        </Text>
+        <View style={styles.statsGrid}>
+          <View style={[styles.statBig, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Ionicons name="scale-outline" size={20} color={colors.accent} />
+            <Text style={[styles.statBigValue, { color: colors.textPrimary }]}>
+              {weightVal ? weightVal.toFixed(1) : '--'}
+            </Text>
+            <Text style={[styles.statBigUnit, { color: colors.textMuted }]}>{weightUnit}</Text>
+            <Text style={[styles.statBigLabel, { color: colors.textSecondary }]}>{t.dashboard.weight}</Text>
+          </View>
+          <View style={[styles.statBig, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Ionicons name="analytics-outline" size={20} color={colors.accent} />
+            <Text style={[styles.statBigValue, { color: colors.textPrimary }]}>
+              {bodyFatM ? bodyFatM.value.toFixed(1) : '--'}
+            </Text>
+            <Text style={[styles.statBigUnit, { color: colors.textMuted }]}>%</Text>
+            <Text style={[styles.statBigLabel, { color: colors.textSecondary }]}>{t.dashboard.bodyFat}</Text>
+          </View>
+          <View style={[styles.statBig, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Ionicons name="body-outline" size={20} color={colors.accent} />
+            <Text style={[styles.statBigValue, { color: colors.textPrimary }]}>{measuredCount}</Text>
+            <Text style={[styles.statBigUnit, { color: colors.textMuted }]}>/11</Text>
+            <Text style={[styles.statBigLabel, { color: colors.textSecondary }]}>
+              {lang === 'es' ? 'Medidos' : 'Measured'}
             </Text>
           </View>
         </View>
 
-        {/* Today's Workout */}
+        {/* All body measurements summary */}
         <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
-          {t.dashboard.todayWorkout}
+          {t.dashboard.recentMeasurements}
         </Text>
+        <View style={[styles.measureGrid, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          {BODY_PART_KEYS.map((key) => {
+            const partDef = BODY_PARTS[key];
+            const m = latestMeasurements[key];
+            const val = m ? convertValue(m.value, partDef.unit, user.unitSystem) : null;
+            const unit = getDisplayUnit(partDef.unit, user.unitSystem);
+            const label = (t.bodyParts as any)[key] || partDef.label;
 
-        {isRestDay ? (
-          <Card style={styles.surfaceBg}>
-            <View style={styles.restDay}>
-              <Ionicons name="bed-outline" size={40} color={colors.accent} />
-              <Text style={[styles.restTitle, { color: colors.textPrimary }]}>
-                {t.dashboard.restDay}
-              </Text>
-              <Text style={[styles.restDesc, { color: colors.textMuted }]}>
-                {t.dashboard.restDayDesc}
-              </Text>
-            </View>
-          </Card>
-        ) : (
-          <Pressable style={[styles.workoutCard, { backgroundColor: colors.accent + '15', borderColor: colors.accent }]}>
-            <View style={styles.workoutHeader}>
-              <View style={[styles.workoutIcon, { backgroundColor: colors.accent + '25' }]}>
-                <Ionicons name={todayWorkout.icon as any} size={28} color={colors.accent} />
-              </View>
-              <View style={styles.workoutInfo}>
-                <Text style={[styles.workoutLabel, { color: colors.accent }]}>
-                  {todayWorkout.label[lang]}
+            return (
+              <Pressable
+                key={key}
+                style={[styles.measureCell, { borderBottomColor: colors.border }]}
+                onPress={() => router.push(`/measurement/${key}` as any)}
+              >
+                <Text style={[styles.measureLabel, { color: colors.textSecondary }]}>{label}</Text>
+                <Text style={[styles.measureValue, { color: val ? colors.accent : colors.textMuted }]}>
+                  {val ? `${val.toFixed(1)} ${unit}` : '--'}
                 </Text>
-                <Text style={[styles.workoutCount, { color: colors.textSecondary }]}>
-                  {todayWorkout.exercises.length} {t.dashboard.exercises}
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={colors.accent} />
-            </View>
+              </Pressable>
+            );
+          })}
+        </View>
 
-            {/* Exercise preview */}
-            <View style={styles.exercisePreview}>
-              {todayWorkout.exercises.slice(0, 4).map((ex, i) => (
-                <View key={ex.id} style={[styles.exerciseRow, { borderBottomColor: colors.border }]}>
-                  <View style={[styles.exerciseNum, { backgroundColor: colors.accent }]}>
-                    <Text style={styles.exerciseNumText}>{i + 1}</Text>
-                  </View>
-                  <View style={styles.exerciseInfo}>
-                    <Text style={[styles.exerciseName, { color: colors.textPrimary }]}>
-                      {ex.name[lang]}
-                    </Text>
-                    <Text style={[styles.exerciseMeta, { color: colors.textMuted }]}>
-                      {ex.sets} {t.workout.sets} × {ex.reps} {t.workout.reps} · {ex.restSec}{t.workout.seconds} {t.workout.rest}
-                    </Text>
-                  </View>
+        {/* Exercises preview for today */}
+        {!isRestDay && todayWorkout.exercises.length > 0 && (
+          <>
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
+              {t.workout.exercises} — {todayWorkout.label[lang]}
+            </Text>
+            {todayWorkout.exercises.slice(0, 5).map((ex, i) => (
+              <View key={ex.id} style={[styles.exerciseItem, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <View style={[styles.exNum, { backgroundColor: colors.accent }]}>
+                  <Text style={styles.exNumText}>{i + 1}</Text>
                 </View>
-              ))}
-              {todayWorkout.exercises.length > 4 && (
-                <Text style={[styles.moreExercises, { color: colors.accent }]}>
-                  +{todayWorkout.exercises.length - 4} more...
-                </Text>
-              )}
-            </View>
-          </Pressable>
-        )}
-
-        {/* Quick Stats */}
-        <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
-          {t.dashboard.quickStats}
-        </Text>
-        <View style={styles.statsRow}>
-          <Card style={styles.statCard}>
-            <Text style={[styles.statLabel, { color: colors.textMuted }]}>{t.dashboard.weight}</Text>
-            <Text style={[styles.statValue, { color: colors.textPrimary }]}>
-              {weightDisplay ? weightDisplay.toFixed(1) : '--'}
-            </Text>
-            <Text style={[styles.statUnit, { color: colors.textSecondary }]}>{weightUnit}</Text>
-          </Card>
-          <Card style={styles.statCard}>
-            <Text style={[styles.statLabel, { color: colors.textMuted }]}>{t.dashboard.bodyFat}</Text>
-            <Text style={[styles.statValue, { color: colors.textPrimary }]}>
-              {bodyFatM ? bodyFatM.value.toFixed(1) : '--'}
-            </Text>
-            <Text style={[styles.statUnit, { color: colors.textSecondary }]}>%</Text>
-          </Card>
-        </View>
-
-        {/* Recent Measurements */}
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
-            {t.dashboard.recentMeasurements}
-          </Text>
-        </View>
-
-        {recentMeasurements.length > 0 ? (
-          <Card style={styles.surfaceBg}>
-            {recentMeasurements.slice(0, 5).map((m, i) => {
-              const partKey = m.bodyPart as BodyPartKey;
-              const partDef = BODY_PARTS[partKey];
-              if (!partDef) return null;
-              const displayVal = convertValue(m.value, partDef.unit, user.unitSystem);
-              const displayUnit = getDisplayUnit(partDef.unit, user.unitSystem);
-              const partLabel = t.bodyParts[partKey] || partDef.label;
-              return (
-                <Pressable
-                  key={m.id}
-                  style={[styles.recentRow, i < 4 && { borderBottomWidth: 1, borderBottomColor: colors.border }]}
-                  onPress={() => router.push(`/history/${m.bodyPart}` as any)}
-                >
-                  <View>
-                    <Text style={[styles.recentPart, { color: colors.textPrimary }]}>{partLabel}</Text>
-                    <Text style={[styles.recentDate, { color: colors.textMuted }]}>{getRelativeDate(m.measuredAt)}</Text>
-                  </View>
-                  <Text style={[styles.recentValue, { color: colors.accent }]}>
-                    {displayVal.toFixed(1)} {displayUnit}
+                <View style={styles.exInfo}>
+                  <Text style={[styles.exName, { color: colors.textPrimary }]}>{ex.name[lang]}</Text>
+                  <Text style={[styles.exMeta, { color: colors.textMuted }]}>
+                    {ex.sets}×{ex.reps} · {ex.restSec}s
                   </Text>
-                </Pressable>
-              );
-            })}
-          </Card>
-        ) : (
-          <Card style={styles.surfaceBg}>
-            <Pressable style={styles.emptyAction} onPress={() => router.push('/(tabs)/measure' as any)}>
-              <Ionicons name="add-circle-outline" size={24} color={colors.accent} />
-              <Text style={[styles.emptyText, { color: colors.textMuted }]}>{t.dashboard.noMeasurements}</Text>
-            </Pressable>
-          </Card>
+                </View>
+                <Text style={[styles.exTip, { color: colors.textMuted }]} numberOfLines={1}>
+                  {ex.tips[lang]}
+                </Text>
+              </View>
+            ))}
+          </>
         )}
 
         {/* Quick Actions */}
         <View style={styles.actionsRow}>
-          <Pressable style={[styles.actionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+          <Pressable style={[styles.actionBtn, { backgroundColor: colors.accent }]}
             onPress={() => router.push('/(tabs)/measure' as any)}>
-            <Ionicons name="body" size={26} color={colors.accent} />
-            <Text style={[styles.actionLabel, { color: colors.textSecondary }]}>{t.dashboard.measure}</Text>
+            <Ionicons name="body" size={22} color="#0D0D0D" />
+            <Text style={styles.actionBtnText}>{t.tabs.measure}</Text>
           </Pressable>
-          <Pressable style={[styles.actionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+          <Pressable style={[styles.actionBtn, { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }]}
             onPress={() => router.push('/(tabs)/progress' as any)}>
-            <Ionicons name="trending-up" size={26} color={colors.success} />
-            <Text style={[styles.actionLabel, { color: colors.textSecondary }]}>{t.progress.title}</Text>
-          </Pressable>
-          <Pressable style={[styles.actionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
-            onPress={() => router.push('/event/new' as any)}>
-            <Ionicons name="calendar" size={26} color={colors.info} />
-            <Text style={[styles.actionLabel, { color: colors.textSecondary }]}>{t.dashboard.newEvent}</Text>
+            <Ionicons name="trending-up" size={22} color={colors.accent} />
+            <Text style={[styles.actionBtnTextAlt, { color: colors.textPrimary }]}>{t.tabs.progress}</Text>
           </Pressable>
         </View>
 
         {/* Footer disclaimer */}
-        <Text style={[styles.footerDisclaimer, { color: colors.textMuted }]}>
-          {t.disclaimer}
-        </Text>
+        <Text style={[styles.disclaimer, { color: colors.textMuted }]}>{t.disclaimer}</Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -212,76 +183,65 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { padding: Layout.screenPadding, paddingBottom: 30 },
+
+  headerSection: { marginBottom: Layout.spacing.md },
   logo: { ...Typography.h1, marginBottom: 2 },
-  greeting: { ...Typography.body, marginBottom: Layout.spacing.md },
+  greeting: { ...Typography.body },
 
-  // Quote
   quoteCard: {
-    flexDirection: 'row', padding: 14, borderRadius: 14,
-    borderWidth: 1, gap: 10, marginBottom: Layout.spacing.lg,
-    alignItems: 'flex-start',
+    padding: 14, borderRadius: 14, borderWidth: 1, marginBottom: Layout.spacing.lg,
   },
-  quoteContent: { flex: 1 },
-  quoteText: { ...Typography.bodySmall, fontStyle: 'italic', lineHeight: 20 },
-  quoteAuthor: { ...Typography.caption, fontWeight: '600', marginTop: 6 },
+  quoteText: { ...Typography.bodySmall, fontStyle: 'italic', lineHeight: 22 },
+  quoteAuthor: { ...Typography.caption, fontWeight: '700', marginTop: 6 },
 
-  // Today's workout
+  workoutBanner: {
+    flexDirection: 'row', alignItems: 'center', padding: 14,
+    borderRadius: 14, borderWidth: 1, marginBottom: Layout.spacing.md, gap: 12,
+  },
+  workoutIconBg: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  workoutInfo: { flex: 1 },
+  workoutTitle: { ...Typography.body, fontWeight: '700' },
+  workoutSub: { ...Typography.caption, marginTop: 2 },
+
   sectionTitle: { ...Typography.h3, marginBottom: Layout.spacing.sm, marginTop: Layout.spacing.md },
-  workoutCard: {
-    borderRadius: Layout.cardBorderRadius, borderWidth: 1, padding: Layout.cardPadding,
-    overflow: 'hidden',
+
+  statsGrid: { flexDirection: 'row', gap: Layout.spacing.sm },
+  statBig: {
+    flex: 1, alignItems: 'center', padding: 14,
+    borderRadius: 14, borderWidth: 1, gap: 2,
   },
-  workoutHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  workoutIcon: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  workoutInfo: { flex: 1, marginLeft: 12 },
-  workoutLabel: { ...Typography.h3 },
-  workoutCount: { ...Typography.caption, marginTop: 2 },
-  exercisePreview: {},
-  exerciseRow: {
-    flexDirection: 'row', alignItems: 'center', paddingVertical: 8,
-    borderBottomWidth: 1, gap: 10,
+  statBigValue: { ...Typography.numeric, fontSize: 28 },
+  statBigUnit: { ...Typography.caption },
+  statBigLabel: { ...Typography.caption, fontWeight: '600', marginTop: 2 },
+
+  measureGrid: {
+    borderRadius: 14, borderWidth: 1, overflow: 'hidden',
   },
-  exerciseNum: {
-    width: 24, height: 24, borderRadius: 12,
-    alignItems: 'center', justifyContent: 'center',
+  measureCell: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingVertical: 10, paddingHorizontal: 14, borderBottomWidth: 1,
   },
-  exerciseNumText: { fontSize: 11, fontWeight: '700', color: '#0D0D0D' },
-  exerciseInfo: { flex: 1 },
-  exerciseName: { ...Typography.bodySmall, fontWeight: '600' },
-  exerciseMeta: { ...Typography.caption, marginTop: 2 },
-  moreExercises: { ...Typography.bodySmall, fontWeight: '600', textAlign: 'center', paddingTop: 8 },
+  measureLabel: { ...Typography.bodySmall },
+  measureValue: { ...Typography.body, fontWeight: '700' },
 
-  // Rest day
-  restDay: { alignItems: 'center', paddingVertical: Layout.spacing.lg },
-  restTitle: { ...Typography.h3, marginTop: 8 },
-  restDesc: { ...Typography.bodySmall, marginTop: 4, textAlign: 'center' },
-
-  // Stats
-  statsRow: { flexDirection: 'row', gap: Layout.spacing.sm },
-  statCard: { flex: 1, alignItems: 'center' },
-  statLabel: { ...Typography.caption, marginBottom: 2 },
-  statValue: { ...Typography.numeric },
-  statUnit: { ...Typography.caption },
-
-  // Recent
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: Layout.spacing.md, marginBottom: Layout.spacing.sm },
-  recentRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 },
-  recentPart: { ...Typography.body, fontWeight: '500' },
-  recentDate: { ...Typography.caption, marginTop: 2 },
-  recentValue: { ...Typography.body, fontWeight: '700' },
-  emptyAction: { flexDirection: 'row', alignItems: 'center', gap: Layout.spacing.md, paddingVertical: Layout.spacing.md },
-  emptyText: { ...Typography.bodySmall, flex: 1 },
-
-  // Actions
-  actionsRow: { flexDirection: 'row', gap: Layout.spacing.sm, marginTop: Layout.spacing.md },
-  actionCard: {
-    flex: 1, alignItems: 'center', justifyContent: 'center',
-    borderRadius: Layout.cardBorderRadius, paddingVertical: Layout.spacing.lg,
-    borderWidth: 1, gap: Layout.spacing.sm,
+  exerciseItem: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    padding: 12, borderRadius: 12, borderWidth: 1, marginBottom: 6,
   },
-  actionLabel: { ...Typography.caption, fontWeight: '600' },
+  exNum: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+  exNumText: { fontSize: 12, fontWeight: '700', color: '#0D0D0D' },
+  exInfo: { flex: 1 },
+  exName: { ...Typography.bodySmall, fontWeight: '600' },
+  exMeta: { ...Typography.caption, marginTop: 1 },
+  exTip: { ...Typography.caption, flex: 0.6 },
 
-  // Footer
-  surfaceBg: {},
-  footerDisclaimer: { ...Typography.caption, textAlign: 'center', marginTop: Layout.spacing.xl, lineHeight: 18 },
+  actionsRow: { flexDirection: 'row', gap: Layout.spacing.sm, marginTop: Layout.spacing.lg },
+  actionBtn: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 8, paddingVertical: 14, borderRadius: 12,
+  },
+  actionBtnText: { ...Typography.body, color: '#0D0D0D', fontWeight: '700' },
+  actionBtnTextAlt: { ...Typography.body, fontWeight: '700' },
+
+  disclaimer: { ...Typography.caption, textAlign: 'center', marginTop: Layout.spacing.xl, lineHeight: 18 },
 });
