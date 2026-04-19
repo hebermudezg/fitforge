@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Dimensions, StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { BodyRegion } from './BodyRegion';
@@ -22,7 +22,7 @@ interface BodyModelProps {
   unitSystem?: 'metric' | 'imperial';
 }
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export function BodyModel({
   gender,
@@ -33,8 +33,18 @@ export function BodyModel({
 }: BodyModelProps) {
   const regions = gender === 'male' ? MALE_REGIONS : FEMALE_REGIONS;
   const outline = gender === 'male' ? MALE_OUTLINE : FEMALE_OUTLINE;
-  const svgWidth = SCREEN_WIDTH - 32;
-  const svgHeight = svgWidth * 2.5;
+
+  // Fit body within available screen space (leave room for header + chips)
+  const maxHeight = SCREEN_HEIGHT * 0.55;
+  const maxWidth = SCREEN_WIDTH * 0.7;
+  // viewBox is 200x500, aspect ratio = 0.4
+  const aspectRatio = 200 / 500;
+  let svgHeight = maxHeight;
+  let svgWidth = svgHeight * aspectRatio;
+  if (svgWidth > maxWidth) {
+    svgWidth = maxWidth;
+    svgHeight = svgWidth / aspectRatio;
+  }
 
   return (
     <View style={styles.container}>
@@ -42,18 +52,15 @@ export function BodyModel({
         width={svgWidth}
         height={svgHeight}
         viewBox={BODY_VIEWBOX}
-        style={styles.svg}
       >
-        {/* Body outline silhouette */}
         <Path
           d={outline}
           fill={Colors.surfaceLight}
           stroke={Colors.bodyStroke}
-          strokeWidth={1}
-          fillOpacity={0.4}
+          strokeWidth={1.2}
+          fillOpacity={0.5}
         />
 
-        {/* Interactive body regions */}
         {regions.map((region) => {
           const measurement = measurements[region.key];
           const partDef = BODY_PARTS[region.key];
@@ -82,8 +89,6 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  svg: {
-    alignSelf: 'center',
+    paddingVertical: 8,
   },
 });

@@ -190,5 +190,5 @@ const styles = StyleSheet.create({
   multiline: { minHeight: 100, textAlignVertical: 'top' },
   saveBtn: { borderRadius: Layout.buttonBorderRadius, overflow: 'hidden', marginTop: Layout.spacing.md },
   saveGradient: { alignItems: 'center', justifyContent: 'center', paddingVertical: 16 },
-  saveBtnText: { ...Typography.h3, color: Colors.textPrimary },
+  saveBtnText: { ...Typography.h3, color: '#0D0D0D' },
 });

@@ -192,7 +192,7 @@ export default function MeasurementEntryScreen() {
             end={{ x: 1, y: 0 }}
             style={styles.saveGradient}
           >
-            <Ionicons name="checkmark" size={24} color={Colors.textPrimary} />
+            <Ionicons name="checkmark" size={24} color="#0D0D0D" />
             <Text style={styles.saveText}>Save Measurement</Text>
           </LinearGradient>
         </Pressable>
@@ -331,7 +331,7 @@ const styles = StyleSheet.create({
   },
   saveText: {
     ...Typography.h3,
-    color: Colors.textPrimary,
+    color: '#0D0D0D',
   },
   errorText: {
     ...Typography.body,

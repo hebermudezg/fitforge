@@ -13,7 +13,7 @@ import { MeasurementProvider } from '@/contexts/MeasurementContext';
 export { ErrorBoundary } from 'expo-router';
 
 export const unstable_settings = {
-  initialRouteName: '(tabs)',
+  initialRouteName: 'onboarding',
 };
 
 SplashScreen.preventAutoHideAsync();
@@ -61,6 +61,7 @@ function RootLayoutNav() {
         <UserProvider>
           <MeasurementProvider>
       <Stack>
+        <Stack.Screen name="onboarding" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen
           name="measurement/[bodyPart]"

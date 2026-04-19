@@ -127,7 +127,7 @@ export default function NewEventScreen() {
             end={{ x: 1, y: 0 }}
             style={styles.saveGradient}
           >
-            <Ionicons name="checkmark" size={24} color={Colors.textPrimary} />
+            <Ionicons name="checkmark" size={24} color="#0D0D0D" />
             <Text style={styles.saveText}>Create Event</Text>
           </LinearGradient>
         </Pressable>
@@ -165,5 +165,5 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     gap: Layout.spacing.sm, paddingVertical: 16,
   },
-  saveText: { ...Typography.h3, color: Colors.textPrimary },
+  saveText: { ...Typography.h3, color: '#0D0D0D' },
 });

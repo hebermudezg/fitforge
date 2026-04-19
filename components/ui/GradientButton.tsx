@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   text: {
-    color: Colors.textPrimary,
+    color: '#0D0D0D',
     ...Typography.h3,
   },
   pressed: {
