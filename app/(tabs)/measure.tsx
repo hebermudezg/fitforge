@@ -6,19 +6,21 @@ import { BodyModel } from '@/components/body/BodyModel';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { useMeasurements } from '@/contexts/MeasurementContext';
 import { useUser } from '@/contexts/UserContext';
-import { Colors } from '@/constants/Colors';
+import { useTheme } from '@/contexts/ThemeContext';
 import { Typography } from '@/constants/Typography';
 import { Layout } from '@/constants/Layout';
 import { BODY_PARTS, BODY_PART_KEYS, type BodyPartKey } from '@/types/bodyParts';
 
 export default function MeasureScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
   const { user } = useUser();
   const { latestMeasurements } = useMeasurements();
   const [selectedPart, setSelectedPart] = useState<BodyPartKey | null>(null);
-  const genderOptions = ['Male', 'Female'];
   const [genderIndex, setGenderIndex] = useState(user.gender === 'female' ? 1 : 0);
+  const [sideIndex, setSideIndex] = useState(0);
   const gender = genderIndex === 0 ? 'male' : 'female';
+  const side = sideIndex === 0 ? 'front' : 'back';
 
   const handleBodyPartPress = (key: BodyPartKey) => {
     setSelectedPart(key);
@@ -26,46 +28,55 @@ export default function MeasureScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.title}>Body Measurements</Text>
-        <SegmentedControl
-          options={genderOptions}
-          selectedIndex={genderIndex}
-          onSelect={setGenderIndex}
-        />
+        <Text style={[styles.title, { color: colors.textPrimary }]}>Body Measurements</Text>
+        <View style={styles.togglesRow}>
+          <View style={styles.toggleWrap}>
+            <SegmentedControl
+              options={['Male', 'Female']}
+              selectedIndex={genderIndex}
+              onSelect={setGenderIndex}
+            />
+          </View>
+          <View style={styles.toggleWrap}>
+            <SegmentedControl
+              options={['Front', 'Back']}
+              selectedIndex={sideIndex}
+              onSelect={setSideIndex}
+            />
+          </View>
+        </View>
       </View>
 
-      <ScrollView
-        style={styles.bodyScroll}
-        contentContainerStyle={styles.bodyScrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+      <View style={styles.bodyContainer}>
         <BodyModel
           gender={gender}
+          side={side as 'front' | 'back'}
           onBodyPartPress={handleBodyPartPress}
           selectedPart={selectedPart}
           measurements={latestMeasurements}
-          unitSystem={user.unitSystem}
         />
-      </ScrollView>
+      </View>
 
       {/* Quick-entry chips */}
-      <View style={styles.chipsContainer}>
+      <View style={[styles.chipsContainer, { borderTopColor: colors.border, backgroundColor: colors.surface }]}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsScroll}>
           {BODY_PART_KEYS.map((key) => (
             <Pressable
               key={key}
               style={[
                 styles.chip,
-                selectedPart === key && styles.chipSelected,
+                { backgroundColor: colors.surfaceLight, borderColor: colors.border },
+                selectedPart === key && { backgroundColor: colors.accent, borderColor: colors.accent },
               ]}
               onPress={() => handleBodyPartPress(key)}
             >
               <Text
                 style={[
                   styles.chipText,
-                  selectedPart === key && styles.chipTextSelected,
+                  { color: colors.textSecondary },
+                  selectedPart === key && { color: '#0D0D0D', fontWeight: '600' },
                 ]}
               >
                 {BODY_PARTS[key].label}
@@ -79,53 +90,20 @@ export default function MeasureScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  header: {
-    padding: Layout.screenPadding,
-    gap: Layout.spacing.sm,
-  },
-  title: {
-    ...Typography.h2,
-    color: Colors.textPrimary,
-  },
-  bodyScroll: {
-    flex: 1,
-  },
-  bodyScrollContent: {
-    alignItems: 'center',
-    paddingBottom: Layout.spacing.md,
-  },
+  container: { flex: 1 },
+  header: { padding: Layout.screenPadding, gap: Layout.spacing.sm },
+  title: { ...Typography.h2 },
+  togglesRow: { flexDirection: 'row', gap: Layout.spacing.sm },
+  toggleWrap: { flex: 1 },
+  bodyContainer: { flex: 1, justifyContent: 'center' },
   chipsContainer: {
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
-    backgroundColor: Colors.surface,
     paddingVertical: Layout.spacing.sm,
   },
-  chipsScroll: {
-    paddingHorizontal: Layout.screenPadding,
-    gap: Layout.spacing.sm,
-  },
+  chipsScroll: { paddingHorizontal: Layout.screenPadding, gap: Layout.spacing.sm },
   chip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: Layout.chipBorderRadius,
-    backgroundColor: Colors.surfaceLight,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    paddingHorizontal: 16, paddingVertical: 8,
+    borderRadius: Layout.chipBorderRadius, borderWidth: 1,
   },
-  chipSelected: {
-    backgroundColor: Colors.accent,
-    borderColor: Colors.accent,
-  },
-  chipText: {
-    ...Typography.bodySmall,
-    color: Colors.textSecondary,
-  },
-  chipTextSelected: {
-    color: Colors.textPrimary,
-    fontWeight: '600',
-  },
+  chipText: { ...Typography.bodySmall },
 });

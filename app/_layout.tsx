@@ -1,11 +1,11 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { DarkTheme, ThemeProvider } from '@react-navigation/native';
+import { DarkTheme, DefaultTheme, ThemeProvider as NavThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
-import { Colors } from '@/constants/Colors';
+import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
 import { DatabaseProvider } from '@/contexts/DatabaseContext';
 import { UserProvider } from '@/contexts/UserContext';
 import { MeasurementProvider } from '@/contexts/MeasurementContext';
@@ -17,19 +17,6 @@ export const unstable_settings = {
 };
 
 SplashScreen.preventAutoHideAsync();
-
-const FitForgeTheme = {
-  ...DarkTheme,
-  colors: {
-    ...DarkTheme.colors,
-    primary: Colors.accent,
-    background: Colors.background,
-    card: Colors.surface,
-    text: Colors.textPrimary,
-    border: Colors.border,
-    notification: Colors.accent,
-  },
-};
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
@@ -47,56 +34,67 @@ export default function RootLayout() {
     }
   }, [loaded]);
 
-  if (!loaded) {
-    return null;
-  }
+  if (!loaded) return null;
 
-  return <RootLayoutNav />;
+  return (
+    <ThemeProvider>
+      <RootLayoutNav />
+    </ThemeProvider>
+  );
 }
 
 function RootLayoutNav() {
+  const { colors, isDark } = useTheme();
+
+  const navTheme = {
+    ...(isDark ? DarkTheme : DefaultTheme),
+    colors: {
+      ...(isDark ? DarkTheme : DefaultTheme).colors,
+      primary: colors.accent,
+      background: colors.background,
+      card: colors.surface,
+      text: colors.textPrimary,
+      border: colors.border,
+      notification: colors.accent,
+    },
+  };
+
   return (
-    <ThemeProvider value={FitForgeTheme}>
+    <NavThemeProvider value={navTheme}>
       <DatabaseProvider>
         <UserProvider>
           <MeasurementProvider>
-      <Stack>
-        <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="measurement/[bodyPart]"
-          options={{
-            presentation: 'modal',
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="history/[bodyPart]"
-          options={{
-            headerStyle: { backgroundColor: Colors.surface },
-            headerTintColor: Colors.textPrimary,
-            title: 'History',
-          }}
-        />
-        <Stack.Screen
-          name="event/new"
-          options={{
-            presentation: 'modal',
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="event/[id]"
-          options={{
-            headerStyle: { backgroundColor: Colors.surface },
-            headerTintColor: Colors.textPrimary,
-            title: 'Event',
-          }}
-        />
-      </Stack>
+            <Stack>
+              <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen
+                name="measurement/[bodyPart]"
+                options={{ presentation: 'modal', headerShown: false }}
+              />
+              <Stack.Screen
+                name="history/[bodyPart]"
+                options={{
+                  headerStyle: { backgroundColor: colors.surface },
+                  headerTintColor: colors.textPrimary,
+                  title: 'History',
+                }}
+              />
+              <Stack.Screen
+                name="event/new"
+                options={{ presentation: 'modal', headerShown: false }}
+              />
+              <Stack.Screen
+                name="event/[id]"
+                options={{
+                  headerStyle: { backgroundColor: colors.surface },
+                  headerTintColor: colors.textPrimary,
+                  title: 'Event',
+                }}
+              />
+            </Stack>
           </MeasurementProvider>
         </UserProvider>
       </DatabaseProvider>
-    </ThemeProvider>
+    </NavThemeProvider>
   );
 }

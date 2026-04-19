@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/Card';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { GradientButton } from '@/components/ui/GradientButton';
 import { useUser } from '@/contexts/UserContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { Colors } from '@/constants/Colors';
 import { Typography } from '@/constants/Typography';
 import { Layout } from '@/constants/Layout';
@@ -18,6 +19,8 @@ import { convertValue, getDisplayUnit } from '@/utils/conversions';
 export default function ProfileScreen() {
   const { user, goals, updateUser, setGoal } = useUser();
   const { latestMeasurements } = useMeasurements();
+  const { colors, mode, setMode } = useTheme();
+  const themeModeIndex = mode === 'light' ? 0 : mode === 'dark' ? 1 : 2;
 
   const [name, setName] = useState(user.name);
   const [heightCm, setHeightCm] = useState(user.heightCm?.toString() || '');
@@ -137,6 +140,16 @@ export default function ProfileScreen() {
             options={['Metric (cm, kg)', 'Imperial (in, lbs)']}
             selectedIndex={unitIndex}
             onSelect={handleUnitChange}
+          />
+        </Card>
+
+        {/* Theme */}
+        <Card style={styles.card}>
+          <Text style={styles.label}>APPEARANCE</Text>
+          <SegmentedControl
+            options={['Light', 'Dark', 'System']}
+            selectedIndex={themeModeIndex}
+            onSelect={(i) => setMode((['light', 'dark', 'system'] as const)[i])}
           />
         </Card>
 
