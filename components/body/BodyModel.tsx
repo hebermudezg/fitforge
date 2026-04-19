@@ -6,6 +6,8 @@ import {
   BODY_VIEWBOX,
   MALE_OUTLINE,
   FEMALE_OUTLINE,
+  MALE_MUSCLE_DETAILS,
+  FEMALE_MUSCLE_DETAILS,
   MALE_REGIONS,
   FEMALE_REGIONS,
 } from './bodyPaths';
@@ -33,12 +35,12 @@ export function BodyModel({
 }: BodyModelProps) {
   const regions = gender === 'male' ? MALE_REGIONS : FEMALE_REGIONS;
   const outline = gender === 'male' ? MALE_OUTLINE : FEMALE_OUTLINE;
+  const muscleDetails = gender === 'male' ? MALE_MUSCLE_DETAILS : FEMALE_MUSCLE_DETAILS;
 
-  // Fit body within available screen space (leave room for header + chips)
-  const maxHeight = SCREEN_HEIGHT * 0.55;
-  const maxWidth = SCREEN_WIDTH * 0.7;
-  // viewBox is 200x500, aspect ratio = 0.4
-  const aspectRatio = 200 / 500;
+  // Fit within screen — viewBox is 300x650
+  const maxHeight = SCREEN_HEIGHT * 0.52;
+  const maxWidth = SCREEN_WIDTH * 0.85;
+  const aspectRatio = 300 / 650;
   let svgHeight = maxHeight;
   let svgWidth = svgHeight * aspectRatio;
   if (svgWidth > maxWidth) {
@@ -48,19 +50,29 @@ export function BodyModel({
 
   return (
     <View style={styles.container}>
-      <Svg
-        width={svgWidth}
-        height={svgHeight}
-        viewBox={BODY_VIEWBOX}
-      >
+      <Svg width={svgWidth} height={svgHeight} viewBox={BODY_VIEWBOX}>
+        {/* Body outline */}
         <Path
           d={outline}
-          fill={Colors.surfaceLight}
+          fill="none"
           stroke={Colors.bodyStroke}
-          strokeWidth={1.2}
-          fillOpacity={0.5}
+          strokeWidth={1.8}
+          strokeLinejoin="round"
+          strokeLinecap="round"
         />
 
+        {/* Muscle definition lines */}
+        <Path
+          d={muscleDetails}
+          fill="none"
+          stroke={Colors.bodyStroke}
+          strokeWidth={0.8}
+          strokeLinejoin="round"
+          strokeLinecap="round"
+          opacity={0.5}
+        />
+
+        {/* Interactive regions */}
         {regions.map((region) => {
           const measurement = measurements[region.key];
           const partDef = BODY_PARTS[region.key];
@@ -89,6 +101,6 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
+    paddingVertical: 4,
   },
 });

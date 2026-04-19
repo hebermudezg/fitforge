@@ -12,36 +12,34 @@ interface BodyRegionProps {
 }
 
 export function BodyRegion({ region, isSelected, latestValue, unit, onPress }: BodyRegionProps) {
-  const fill = isSelected ? Colors.bodyHighlight : Colors.bodyFill;
-  const opacity = isSelected ? 0.9 : 0.6;
-  const strokeColor = isSelected ? Colors.accent : Colors.bodyStroke;
-
   return (
     <G onPress={onPress}>
+      {/* Touchable region - transparent normally, highlighted on select */}
       <Path
         d={region.path}
-        fill={fill}
-        fillOpacity={opacity}
-        stroke={strokeColor}
-        strokeWidth={isSelected ? 2 : 1}
+        fill={isSelected ? Colors.accent : 'transparent'}
+        fillOpacity={isSelected ? 0.3 : 0}
+        stroke={isSelected ? Colors.accent : 'transparent'}
+        strokeWidth={isSelected ? 1.5 : 0}
       />
+
+      {/* Value badge */}
       {latestValue !== undefined && (
         <>
           <Rect
-            x={region.labelAnchor.x - 18}
-            y={region.labelAnchor.y - 10}
-            width={36}
-            height={16}
-            rx={4}
+            x={region.labelAnchor.x - 20}
+            y={region.labelAnchor.y - 9}
+            width={40}
+            height={18}
+            rx={9}
             fill={Colors.accent}
-            fillOpacity={0.9}
           />
           <SvgText
             x={region.labelAnchor.x}
-            y={region.labelAnchor.y + 1}
+            y={region.labelAnchor.y + 4}
             textAnchor="middle"
             fill="#0D0D0D"
-            fontSize={8}
+            fontSize={9}
             fontWeight="bold"
           >
             {latestValue.toFixed(1)}
