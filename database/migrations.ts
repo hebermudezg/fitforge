@@ -6,6 +6,14 @@ const MIGRATIONS = [
     version: 1,
     up: CREATE_TABLES,
   },
+  {
+    version: 2,
+    up: `
+      ALTER TABLE users ADD COLUMN terms_accepted INTEGER NOT NULL DEFAULT 0;
+      ALTER TABLE users ADD COLUMN terms_accepted_at TEXT DEFAULT NULL;
+      ALTER TABLE users ADD COLUMN fitness_goal TEXT DEFAULT NULL;
+    `,
+  },
 ];
 
 export async function runMigrations(db: SQLiteDatabase): Promise<void> {

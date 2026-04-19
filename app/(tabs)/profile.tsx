@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'react-native';
@@ -272,7 +273,10 @@ export default function ProfileScreen() {
                 { text: t.common.cancel, style: 'cancel' },
                 {
                   text: 'OK',
-                  onPress: () => router.replace('/onboarding'),
+                  onPress: async () => {
+                    await AsyncStorage.removeItem('onboarding_complete');
+                    router.replace('/onboarding');
+                  },
                 },
               ]
             );

@@ -1,10 +1,11 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider as NavThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
 import { I18nProvider } from '@/i18n';
 import { DatabaseProvider } from '@/contexts/DatabaseContext';
@@ -48,6 +49,18 @@ export default function RootLayout() {
 
 function RootLayoutNav() {
   const { colors, isDark } = useTheme();
+  const router = useRouter();
+  const [checked, setChecked] = useState(false);
+
+  // Check if onboarding was completed — redirect if so
+  useEffect(() => {
+    AsyncStorage.getItem('onboarding_complete').then((val) => {
+      if (val === 'true') {
+        router.replace('/(tabs)');
+      }
+      setChecked(true);
+    });
+  }, []);
 
   const navTheme = {
     ...(isDark ? DarkTheme : DefaultTheme),
