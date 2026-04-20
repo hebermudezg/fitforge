@@ -117,15 +117,15 @@ export function BodyModel({
       } else if (m) {
         // HAS MEASUREMENT = green tones — shows it has data
         const intensity = getMuscleIntensity(key as MuscleKey, (m as any).value, gender);
-        const greenColors = ['#22C55E30', '#22C55E60', '#22C55E90'];
+        const blueColors = ['#60A5FA30', '#60A5FA60', '#60A5FA95'];
         const strokeWidths = [0.5, 1.0, 1.8];
         data.push({
           slug,
           intensity,
-          color: greenColors[intensity - 1],
+          color: blueColors[intensity - 1],
           styles: {
             strokeWidth: strokeWidths[intensity - 1],
-            stroke: intensity === 3 ? '#22C55E' : isDark ? '#444' : '#BBB',
+            stroke: intensity === 3 ? '#60A5FA' : isDark ? '#444' : '#BBB',
           },
         });
       }
