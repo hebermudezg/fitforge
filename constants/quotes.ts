@@ -31,28 +31,32 @@ export const QUOTES: Quote[] = [
   { text: { en: 'Strength does not come from physical capacity. It comes from an indomitable will.', es: 'La fuerza no viene de la capacidad fisica. Viene de una voluntad indomable.' }, author: 'Mahatma Gandhi' },
 ];
 
-// Quotes specifically for women — empowerment, confidence, self-love
+// Quotes for women — Serena Williams, Ronda Rousey, Michelle Obama, Oprah
 export const FEMALE_QUOTES: Quote[] = [
-  { text: { en: 'She believed she could, so she did.', es: 'Ella creyo que podia, y lo hizo.' }, author: 'R.S. Grey' },
-  { text: { en: 'A strong woman looks a challenge in the eye and gives it a wink.', es: 'Una mujer fuerte mira al desafio a los ojos y le guina.' }, author: 'Gina Carey' },
-  { text: { en: 'The most beautiful thing a woman can wear is confidence.', es: 'Lo mas hermoso que una mujer puede usar es la confianza.' }, author: 'Blake Lively' },
-  { text: { en: 'Strong women dont have attitudes. They have standards.', es: 'Las mujeres fuertes no tienen actitudes. Tienen estandares.' }, author: 'Marilyn Monroe' },
-  { text: { en: 'You are more powerful than you know; you are beautiful just as you are.', es: 'Eres mas poderosa de lo que sabes; eres hermosa tal como eres.' }, author: 'Melissa Etheridge' },
-  { text: { en: 'I am not afraid of storms, for I am learning how to sail my ship.', es: 'No le temo a las tormentas, porque estoy aprendiendo a navegar mi barco.' }, author: 'Louisa May Alcott' },
-  { text: { en: 'The question isnt who is going to let me; its who is going to stop me.', es: 'La pregunta no es quien me va a dejar; es quien me va a detener.' }, author: 'Ayn Rand' },
-  { text: { en: 'Every woman that finally figured out her worth, has picked up her suitcases of pride and boarded a flight to freedom.', es: 'Toda mujer que finalmente descubrio su valor, recogio sus maletas de orgullo y abordo un vuelo a la libertad.' }, author: 'Shannon L. Alder' },
+  { text: { en: 'I am lucky that whatever fear I have inside me, my desire to win is always stronger.', es: 'Tengo suerte de que sin importar el miedo que sienta, mi deseo de ganar siempre es mas fuerte.' }, author: 'Serena Williams' },
+  { text: { en: 'I am not looking to escape the pressure. I am embracing it. Pressure is what builds up in the chamber behind a bullet before it explodes out of the gun.', es: 'No estoy tratando de escapar de la presion. La estoy abrazando. La presion es lo que se acumula en la camara detras de una bala antes de explotar.' }, author: 'Ronda Rousey' },
+  { text: { en: 'There is power in allowing yourself to be known and heard, in owning your unique story, in using your authentic voice.', es: 'Hay poder en permitirse ser conocida y escuchada, en ser duena de tu historia unica, en usar tu voz autentica.' }, author: 'Michelle Obama' },
+  { text: { en: 'The success of every woman should be the inspiration to another. We should raise each other up.', es: 'El exito de cada mujer debe ser inspiracion para otra. Deberiamos levantarnos mutuamente.' }, author: 'Serena Williams' },
+  { text: { en: 'I am scared all the time. You have to have fear in order to have courage. I am courageous because I am a scared person.', es: 'Tengo miedo todo el tiempo. Tienes que tener miedo para tener coraje. Soy valiente porque soy una persona asustada.' }, author: 'Ronda Rousey' },
+  { text: { en: 'Self-esteem comes from being able to define the world in your own terms and refusing to abide by the judgments of others.', es: 'La autoestima viene de poder definir el mundo en tus propios terminos y rechazar los juicios de otros.' }, author: 'Oprah Winfrey' },
+  { text: { en: 'When someone is cruel or acts like a bully, you do not stoop to their level. When they go low, we go high.', es: 'Cuando alguien es cruel o actua como un maton, no te rebajas a su nivel. Cuando bajan, nosotras subimos.' }, author: 'Michelle Obama' },
+  { text: { en: 'To be a fighter, you have to be passionate. That passion escapes as tears from my eyes, sweat from my pores, blood from my veins.', es: 'Para ser luchadora, tienes que ser apasionada. Esa pasion escapa como lagrimas de mis ojos, sudor de mis poros, sangre de mis venas.' }, author: 'Ronda Rousey' },
+  { text: { en: 'Only when you require no approval from outside yourself can you own yourself.', es: 'Solo cuando no requieres aprobacion de otros puedes ser duena de ti misma.' }, author: 'Oprah Winfrey' },
+  { text: { en: 'I am strong, and I am powerful, and I am beautiful at the same time.', es: 'Soy fuerte, soy poderosa, y soy hermosa al mismo tiempo.' }, author: 'Serena Williams' },
 ];
 
-// Quotes specifically for men — discipline, provider mindset, Tate, stoic warriors
+// Quotes for men — Tate, Goggins, Jocko, Stoics
 export const MALE_QUOTES: Quote[] = [
-  { text: { en: 'A mans only duty is to provide, protect, and conquer. Everything else is noise.', es: 'El unico deber de un hombre es proveer, proteger y conquistar. Todo lo demas es ruido.' }, author: 'Andrew Tate' },
-  { text: { en: 'Hard times create strong men. Strong men create good times.', es: 'Los tiempos dificiles crean hombres fuertes. Los hombres fuertes crean buenos tiempos.' }, author: 'G. Michael Hopf' },
-  { text: { en: 'Suffer the pain of discipline or suffer the pain of regret.', es: 'Sufre el dolor de la disciplina o sufre el dolor del arrepentimiento.' }, author: 'Andrew Tate' },
-  { text: { en: 'A man who conquers himself is greater than one who conquers a thousand men in battle.', es: 'Un hombre que se conquista a si mismo es mas grande que uno que conquista a mil hombres en batalla.' }, author: 'Buddha' },
-  { text: { en: 'Cost of being a man: nobody cares about your problems, work anyway.', es: 'El costo de ser hombre: a nadie le importan tus problemas, trabaja de todos modos.' }, author: 'Andrew Tate' },
-  { text: { en: 'The iron never lies. 200 pounds is always 200 pounds.', es: 'El hierro nunca miente. 200 libras siempre son 200 libras.' }, author: 'Henry Rollins' },
-  { text: { en: 'Pain is temporary. Quitting lasts forever.', es: 'El dolor es temporal. Rendirse dura para siempre.' }, author: 'Lance Armstrong' },
-  { text: { en: 'You were born to be a warrior. Train like one.', es: 'Naciste para ser un guerrero. Entrena como uno.' }, author: 'David Goggins' },
+  { text: { en: 'I do not believe in motivation. I believe in discipline. The man who goes to the gym every single day regardless of how he feels will always beat the man who goes when he feels like going.', es: 'No creo en la motivacion. Creo en la disciplina. El hombre que va al gimnasio todos los dias sin importar como se sienta siempre vencera al que va cuando le da la gana.' }, author: 'Andrew Tate' },
+  { text: { en: 'The only way you gain mental toughness is to do things you are not happy doing. If you continue doing things that make you happy, you are not getting stronger.', es: 'La unica forma de ganar dureza mental es hacer cosas que no te hacen feliz. Si continuas haciendo solo lo que te hace feliz, no te estas fortaleciendo.' }, author: 'David Goggins' },
+  { text: { en: 'When you think that you are done, you are only 40 percent into what your body is capable of doing.', es: 'Cuando crees que has terminado, solo has llegado al 40% de lo que tu cuerpo es capaz de hacer.' }, author: 'David Goggins' },
+  { text: { en: 'Discipline equals freedom. Do not expect to be motivated every day. Count on discipline.', es: 'La disciplina es igual a la libertad. No esperes estar motivado todos los dias. Confia en la disciplina.' }, author: 'Jocko Willink' },
+  { text: { en: 'The hallmark of a real man is controlling himself, controlling his emotions, and acting appropriately regardless of how he feels.', es: 'La marca de un verdadero hombre es controlarse a si mismo, controlar sus emociones y actuar apropiadamente sin importar como se sienta.' }, author: 'Andrew Tate' },
+  { text: { en: 'Do not fight stress. Embrace it. Use it to make yourself sharper, smarter, and more effective.', es: 'No luches contra el estres. Abrazalo. Usalo para hacerte mas agudo, inteligente y efectivo.' }, author: 'Jocko Willink' },
+  { text: { en: 'Suffering is a test. That is all it is. Pain unlocks a secret doorway in the mind that leads to peak performance.', es: 'El sufrimiento es una prueba. Eso es todo. El dolor abre una puerta secreta en la mente que lleva al maximo rendimiento.' }, author: 'David Goggins' },
+  { text: { en: 'I judge you unfortunate because you have never lived through misfortune. No one can know what you are capable of without an opponent.', es: 'Te juzgo desafortunado porque nunca has vivido la adversidad. Nadie puede saber de que eres capaz sin un oponente.' }, author: 'Seneca' },
+  { text: { en: 'Hard times create strong men. Strong men create good times. Good times create weak men. Weak men create hard times.', es: 'Los tiempos dificiles crean hombres fuertes. Los hombres fuertes crean buenos tiempos. Los buenos tiempos crean hombres debiles. Los hombres debiles crean tiempos dificiles.' }, author: 'G. Michael Hopf' },
+  { text: { en: 'The iron never lies to you. Two hundred pounds is always two hundred pounds.', es: 'El hierro nunca te miente. Doscientas libras siempre son doscientas libras.' }, author: 'Henry Rollins' },
 ];
 
 export function getDailyQuote(gender?: string): Quote {
