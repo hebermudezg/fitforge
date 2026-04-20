@@ -34,7 +34,7 @@ export default function CalendarScreen() {
     AsyncStorage.getItem('fitness_goal').then((g) => { if (g) setFitnessGoal(g); });
   }, []);
 
-  const weeklyPlan = getWeeklyPlan(fitnessGoal);
+  const weeklyPlan = getWeeklyPlan(fitnessGoal, user.gender);
 
   const MONTH_NAMES_I18N = lang === 'es'
     ? ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']

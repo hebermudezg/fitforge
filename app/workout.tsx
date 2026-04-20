@@ -8,6 +8,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useI18n } from '@/i18n';
 import { Typography } from '@/constants/Typography';
 import { Layout } from '@/constants/Layout';
+import { useUser } from '@/contexts/UserContext';
 import { getTodayWorkout, getWeeklyPlan, type WorkoutDay, type Exercise } from '@/constants/exercises';
 import { getExerciseGif } from '@/constants/exerciseMedia';
 
@@ -15,6 +16,7 @@ export default function WorkoutScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const { t, lang } = useI18n();
+  const { user } = useUser();
   const [fitnessGoal, setFitnessGoal] = useState('build');
   const [expandedExercise, setExpandedExercise] = useState<string | null>(null);
 
@@ -22,7 +24,7 @@ export default function WorkoutScreen() {
     AsyncStorage.getItem('fitness_goal').then((g) => { if (g) setFitnessGoal(g); });
   }, []);
 
-  const todayWorkout = getTodayWorkout(fitnessGoal);
+  const todayWorkout = getTodayWorkout(fitnessGoal, user.gender);
   const isRestDay = todayWorkout.muscleGroup === 'rest';
 
   const toggleExercise = (id: string) => {

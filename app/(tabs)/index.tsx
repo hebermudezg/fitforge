@@ -39,8 +39,8 @@ export default function DashboardScreen() {
 
   const greeting = getGreeting(lang);
   const quote = getDailyQuote();
-  const todayWorkout = getTodayWorkout(fitnessGoal);
-  const weeklyPlan = getWeeklyPlan(fitnessGoal);
+  const todayWorkout = getTodayWorkout(fitnessGoal, user.gender);
+  const weeklyPlan = getWeeklyPlan(fitnessGoal, user.gender);
   const isRestDay = todayWorkout.muscleGroup === 'rest';
   const todayDayIndex = new Date().getDay();
   const todayPlanIndex = todayDayIndex === 0 ? 6 : todayDayIndex - 1;

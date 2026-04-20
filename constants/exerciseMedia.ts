@@ -43,6 +43,13 @@ export const EXERCISE_GIFS: Record<string, string> = {
   rdl: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Romanian-Deadlift.gif',
   calf_raise: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Standing-Calf-Raise.gif',
 
+  // Glutes (female priority)
+  hip_thrust: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Barbell-Hip-Thrust.gif',
+  glute_bridge: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Glute-Bridge.gif',
+  sumo_deadlift: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Sumo-Deadlift.gif',
+  cable_kickback: 'https://fitnessprogramer.com/wp-content/uploads/2021/06/Cable-Glute-Kickback.gif',
+  step_up: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Dumbbell-Step-Up.gif',
+
   // Core
   plank: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Front-Plank.gif',
   cable_crunch: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Cable-Crunch.gif',

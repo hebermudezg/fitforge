@@ -187,8 +187,69 @@ const EXERCISES: Record<string, Exercise[]> = {
       tips: { en: 'Control the movement, dont swing.', es: 'Controla el movimiento, no te balancees.' },
     },
   ],
+  // Female-priority exercises (Contreras 2019 — glute-focused training)
+  glutes: [
+    {
+      id: 'hip_thrust', muscleGroup: 'glutes', muscles: ['gluteal', 'hamstring'],
+      name: { en: 'Barbell Hip Thrust', es: 'Hip Thrust con Barra' },
+      sets: 4, reps: '10-12', restSec: 90,
+      description: { en: 'Back against bench, drive hips up with barbell across lap. Squeeze glutes hard at top.', es: 'Espalda contra banco, empujar caderas arriba con barra en el regazo. Apretar gluteos fuerte arriba.' },
+      tips: { en: 'The #1 glute exercise according to EMG studies (Contreras et al.).', es: 'El ejercicio #1 para gluteos segun estudios EMG (Contreras et al.).' },
+    },
+    {
+      id: 'glute_bridge', muscleGroup: 'glutes', muscles: ['gluteal'],
+      name: { en: 'Glute Bridge', es: 'Puente de Gluteos' },
+      sets: 3, reps: '15-20', restSec: 60,
+      description: { en: 'Lie on floor, feet flat, drive hips up squeezing glutes. Hold 2 sec at top.', es: 'Acostarse en el suelo, pies planos, empujar caderas arriba apretando gluteos. Mantener 2 seg arriba.' },
+      tips: { en: 'Great warm-up or finisher. Add band above knees for extra activation.', es: 'Excelente calentamiento o finalizador. Agregar banda sobre rodillas para mas activacion.' },
+    },
+    {
+      id: 'sumo_deadlift', muscleGroup: 'glutes', muscles: ['gluteal', 'adductors', 'hamstring', 'quadriceps'],
+      name: { en: 'Sumo Deadlift', es: 'Peso Muerto Sumo' },
+      sets: 4, reps: '8-10', restSec: 120,
+      description: { en: 'Wide stance, toes out. Grip inside knees. Drive through floor.', es: 'Postura amplia, puntas afuera. Agarre dentro de rodillas. Empujar a traves del suelo.' },
+      tips: { en: 'Targets glutes and adductors more than conventional deadlift.', es: 'Trabaja mas gluteos y aductores que el peso muerto convencional.' },
+    },
+    {
+      id: 'cable_kickback', muscleGroup: 'glutes', muscles: ['gluteal'],
+      name: { en: 'Cable Kickback', es: 'Patada en Polea' },
+      sets: 3, reps: '12-15 each', restSec: 60,
+      description: { en: 'Attach ankle strap to low cable. Kick leg straight back, squeeze glute at top.', es: 'Correa en tobillo en polea baja. Patear pierna hacia atras, apretar gluteo arriba.' },
+      tips: { en: 'Keep core tight, dont arch lower back.', es: 'Mantener core apretado, no arquear espalda baja.' },
+    },
+    {
+      id: 'step_up', muscleGroup: 'glutes', muscles: ['gluteal', 'quadriceps'],
+      name: { en: 'Dumbbell Step-Up', es: 'Step-Up con Mancuernas' },
+      sets: 3, reps: '10-12 each', restSec: 75,
+      description: { en: 'Step onto bench/box driving through heel. Control the descent.', es: 'Subir al banco/caja empujando con el talon. Controlar el descenso.' },
+      tips: { en: 'Higher box = more glute activation.', es: 'Caja mas alta = mas activacion de gluteos.' },
+    },
+  ],
 };
 
+/**
+ * Gender-specific routine science:
+ *
+ * Contreras B et al. (2019). "Gluteal Muscle Activation During Common
+ * Therapeutic and Strength Exercises." J Orthop Sports Phys Ther.
+ * → Hip thrust produces highest glute EMG activity
+ *
+ * Schoenfeld BJ et al. (2021). "Loading Recommendations for Muscle
+ * Strength, Hypertrophy, and Local Endurance." Sports Medicine.
+ * → Same rep ranges work for both sexes
+ *
+ * Nunes JP et al. (2020). "Muscle hypertrophy response is affected
+ * by the training volume distribution." J Strength Cond Res.
+ * → Volume distribution matters more than total volume
+ *
+ * Key difference: Women benefit from higher glute/lower body volume
+ * (12-20 sets/week) while men typically prioritize upper body volume.
+ * Exercise selection is the same; volume distribution changes.
+ */
+
+// ============================================================
+// MALE routines — PPL with upper body emphasis
+// ============================================================
 // Weekly workout plan (Push/Pull/Legs split)
 export const WEEKLY_PLAN: WorkoutDay[] = [
   {
@@ -287,26 +348,126 @@ const MAINTAIN_PLAN: WorkoutDay[] = [
   { dayKey: 'sunday', label: { en: 'Rest Day', es: 'Dia de Descanso' }, muscleGroup: 'rest', icon: 'bed-outline', exercises: [] },
 ];
 
-const ROUTINES: Record<string, WorkoutDay[]> = {
-  build: WEEKLY_PLAN,      // PPL 6 days
-  lose: LOSE_FAT_PLAN,     // Full body 3x + cardio 2x
-  recomp: RECOMP_PLAN,     // Upper/Lower 4x
-  maintain: MAINTAIN_PLAN, // Full body 3x
+// ============================================================
+// FEMALE routines — Glute/leg emphasis (Contreras 2019)
+// Same exercises as men + hip thrust, glute bridge, kickbacks
+// Higher lower body volume, moderate upper body
+// ============================================================
+const FEMALE_PPL: WorkoutDay[] = [
+  {
+    dayKey: 'monday',
+    label: { en: 'Glutes & Legs', es: 'Gluteos y Piernas' },
+    muscleGroup: 'legs', icon: 'walk-outline',
+    exercises: [EXERCISES.glutes[0], EXERCISES.legs[0], EXERCISES.glutes[2], EXERCISES.legs[3], EXERCISES.glutes[4], EXERCISES.legs[4]],
+  },
+  {
+    dayKey: 'tuesday',
+    label: { en: 'Upper Body', es: 'Tren Superior' },
+    muscleGroup: 'upper', icon: 'barbell-outline',
+    exercises: [EXERCISES.chest[1], EXERCISES.back[1], EXERCISES.shoulders[0], EXERCISES.shoulders[1], EXERCISES.back[2], EXERCISES.biceps[0], EXERCISES.triceps[0]],
+  },
+  {
+    dayKey: 'wednesday',
+    label: { en: 'Glutes & Hamstrings', es: 'Gluteos e Isquiotibiales' },
+    muscleGroup: 'legs', icon: 'walk-outline',
+    exercises: [EXERCISES.glutes[0], EXERCISES.legs[3], EXERCISES.glutes[3], EXERCISES.legs[2], EXERCISES.glutes[1], EXERCISES.core[0]],
+  },
+  {
+    dayKey: 'thursday',
+    label: { en: 'Upper Body + Core', es: 'Tren Superior + Core' },
+    muscleGroup: 'upper', icon: 'barbell-outline',
+    exercises: [EXERCISES.chest[0], EXERCISES.back[0], EXERCISES.shoulders[1], EXERCISES.shoulders[2], EXERCISES.biceps[1], EXERCISES.triceps[1], ...EXERCISES.core.slice(0, 2)],
+  },
+  {
+    dayKey: 'friday',
+    label: { en: 'Legs & Glutes Power', es: 'Piernas y Gluteos Fuerza' },
+    muscleGroup: 'legs', icon: 'walk-outline',
+    exercises: [EXERCISES.glutes[2], EXERCISES.legs[1], EXERCISES.glutes[0], EXERCISES.glutes[4], EXERCISES.legs[4], EXERCISES.core[2]],
+  },
+  {
+    dayKey: 'saturday',
+    label: { en: 'Active Recovery', es: 'Recuperacion Activa' },
+    muscleGroup: 'cardio', icon: 'walk-outline', exercises: [],
+  },
+  {
+    dayKey: 'sunday',
+    label: { en: 'Rest Day', es: 'Dia de Descanso' },
+    muscleGroup: 'rest', icon: 'bed-outline', exercises: [],
+  },
+];
+
+const FEMALE_LOSE_FAT: WorkoutDay[] = [
+  { dayKey: 'monday', label: { en: 'Full Body + Glutes', es: 'Cuerpo Completo + Gluteos' }, muscleGroup: 'fullBody', icon: 'body-outline',
+    exercises: [EXERCISES.glutes[0], EXERCISES.legs[0], EXERCISES.chest[1], EXERCISES.back[1], EXERCISES.shoulders[1], EXERCISES.core[0]] },
+  { dayKey: 'tuesday', label: { en: 'Cardio + Core', es: 'Cardio + Core' }, muscleGroup: 'cardio', icon: 'bicycle-outline',
+    exercises: [...EXERCISES.core, EXERCISES.glutes[1]] },
+  { dayKey: 'wednesday', label: { en: 'Lower Body Focus', es: 'Enfasis Tren Inferior' }, muscleGroup: 'lower', icon: 'walk-outline',
+    exercises: [EXERCISES.glutes[2], EXERCISES.legs[3], EXERCISES.glutes[3], EXERCISES.legs[2], EXERCISES.glutes[4], EXERCISES.legs[4]] },
+  { dayKey: 'thursday', label: { en: 'Cardio + Glutes', es: 'Cardio + Gluteos' }, muscleGroup: 'cardio', icon: 'bicycle-outline',
+    exercises: [EXERCISES.glutes[1], EXERCISES.glutes[3], EXERCISES.core[1]] },
+  { dayKey: 'friday', label: { en: 'Full Body + Glutes', es: 'Cuerpo Completo + Gluteos' }, muscleGroup: 'fullBody', icon: 'body-outline',
+    exercises: [EXERCISES.glutes[0], EXERCISES.legs[1], EXERCISES.back[2], EXERCISES.chest[2], EXERCISES.shoulders[0], EXERCISES.core[2]] },
+  { dayKey: 'saturday', label: { en: 'Active Recovery', es: 'Recuperacion Activa' }, muscleGroup: 'cardio', icon: 'walk-outline', exercises: [] },
+  { dayKey: 'sunday', label: { en: 'Rest Day', es: 'Dia de Descanso' }, muscleGroup: 'rest', icon: 'bed-outline', exercises: [] },
+];
+
+const FEMALE_RECOMP: WorkoutDay[] = [
+  { dayKey: 'monday', label: { en: 'Lower Body A', es: 'Tren Inferior A' }, muscleGroup: 'lower', icon: 'walk-outline',
+    exercises: [EXERCISES.glutes[0], EXERCISES.legs[0], EXERCISES.glutes[3], EXERCISES.legs[3], EXERCISES.glutes[1], EXERCISES.legs[4]] },
+  { dayKey: 'tuesday', label: { en: 'Upper Body A', es: 'Tren Superior A' }, muscleGroup: 'upper', icon: 'barbell-outline',
+    exercises: [EXERCISES.chest[0], EXERCISES.back[1], EXERCISES.shoulders[0], EXERCISES.shoulders[1], EXERCISES.biceps[0], EXERCISES.triceps[0], EXERCISES.core[0]] },
+  { dayKey: 'wednesday', label: { en: 'Rest', es: 'Descanso' }, muscleGroup: 'rest', icon: 'bed-outline', exercises: [] },
+  { dayKey: 'thursday', label: { en: 'Lower Body B (Glutes)', es: 'Tren Inferior B (Gluteos)' }, muscleGroup: 'lower', icon: 'walk-outline',
+    exercises: [EXERCISES.glutes[2], EXERCISES.glutes[0], EXERCISES.legs[2], EXERCISES.glutes[4], EXERCISES.legs[3], EXERCISES.core[2]] },
+  { dayKey: 'friday', label: { en: 'Upper Body B', es: 'Tren Superior B' }, muscleGroup: 'upper', icon: 'barbell-outline',
+    exercises: [EXERCISES.chest[1], EXERCISES.back[2], EXERCISES.shoulders[2], EXERCISES.back[0], EXERCISES.biceps[1], EXERCISES.triceps[1], EXERCISES.core[1]] },
+  { dayKey: 'saturday', label: { en: 'Active Recovery', es: 'Recuperacion Activa' }, muscleGroup: 'cardio', icon: 'walk-outline', exercises: [] },
+  { dayKey: 'sunday', label: { en: 'Rest Day', es: 'Dia de Descanso' }, muscleGroup: 'rest', icon: 'bed-outline', exercises: [] },
+];
+
+const FEMALE_MAINTAIN: WorkoutDay[] = [
+  { dayKey: 'monday', label: { en: 'Full Body + Glutes', es: 'Cuerpo Completo + Gluteos' }, muscleGroup: 'fullBody', icon: 'body-outline',
+    exercises: [EXERCISES.glutes[0], EXERCISES.legs[0], EXERCISES.chest[1], EXERCISES.back[1], EXERCISES.shoulders[1], EXERCISES.core[0]] },
+  { dayKey: 'tuesday', label: { en: 'Rest / Cardio', es: 'Descanso / Cardio' }, muscleGroup: 'rest', icon: 'bed-outline', exercises: [] },
+  { dayKey: 'wednesday', label: { en: 'Full Body + Glutes', es: 'Cuerpo Completo + Gluteos' }, muscleGroup: 'fullBody', icon: 'body-outline',
+    exercises: [EXERCISES.glutes[2], EXERCISES.legs[3], EXERCISES.back[2], EXERCISES.chest[2], EXERCISES.shoulders[0], EXERCISES.core[1]] },
+  { dayKey: 'thursday', label: { en: 'Rest / Cardio', es: 'Descanso / Cardio' }, muscleGroup: 'rest', icon: 'bed-outline', exercises: [] },
+  { dayKey: 'friday', label: { en: 'Full Body + Glutes', es: 'Cuerpo Completo + Gluteos' }, muscleGroup: 'fullBody', icon: 'body-outline',
+    exercises: [EXERCISES.glutes[0], EXERCISES.legs[1], EXERCISES.back[0], EXERCISES.glutes[3], EXERCISES.shoulders[2], EXERCISES.core[2]] },
+  { dayKey: 'saturday', label: { en: 'Active Recovery', es: 'Recuperacion Activa' }, muscleGroup: 'cardio', icon: 'walk-outline', exercises: [] },
+  { dayKey: 'sunday', label: { en: 'Rest Day', es: 'Dia de Descanso' }, muscleGroup: 'rest', icon: 'bed-outline', exercises: [] },
+];
+
+// Male routines (upper body emphasis)
+const MALE_ROUTINES: Record<string, WorkoutDay[]> = {
+  build: WEEKLY_PLAN,
+  lose: LOSE_FAT_PLAN,
+  recomp: RECOMP_PLAN,
+  maintain: MAINTAIN_PLAN,
 };
 
-export function getRoutineForGoal(goal: string): WorkoutDay[] {
-  return ROUTINES[goal] || WEEKLY_PLAN;
+// Female routines (glute/lower body emphasis)
+const FEMALE_ROUTINES: Record<string, WorkoutDay[]> = {
+  build: FEMALE_PPL,
+  lose: FEMALE_LOSE_FAT,
+  recomp: FEMALE_RECOMP,
+  maintain: FEMALE_MAINTAIN,
+};
+
+export function getRoutineForGoal(goal: string, gender?: string): WorkoutDay[] {
+  const routines = gender === 'female' ? FEMALE_ROUTINES : MALE_ROUTINES;
+  return routines[goal] || (gender === 'female' ? FEMALE_PPL : WEEKLY_PLAN);
 }
 
-export function getTodayWorkout(goal?: string): WorkoutDay {
-  const plan = goal ? getRoutineForGoal(goal) : WEEKLY_PLAN;
+export function getTodayWorkout(goal?: string, gender?: string): WorkoutDay {
+  const plan = getRoutineForGoal(goal || 'build', gender);
   const dayIndex = new Date().getDay();
   const planIndex = dayIndex === 0 ? 6 : dayIndex - 1;
   return plan[planIndex];
 }
 
-export function getWeeklyPlan(goal?: string): WorkoutDay[] {
-  return goal ? getRoutineForGoal(goal) : WEEKLY_PLAN;
+export function getWeeklyPlan(goal?: string, gender?: string): WorkoutDay[] {
+  return getRoutineForGoal(goal || 'build', gender);
 }
 
 export function getExercisesByMuscle(): Record<string, Exercise[]> {
