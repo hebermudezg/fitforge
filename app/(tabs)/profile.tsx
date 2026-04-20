@@ -84,7 +84,7 @@ export default function ProfileScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.inner}>
         <Text style={styles.title}>Profile</Text>
 
@@ -262,20 +262,22 @@ export default function ProfileScreen() {
           </Text>
         </Card>
 
-        {/* Logout / Reset */}
+        {/* Logout */}
         <Pressable
           style={[styles.logoutBtn, { borderColor: Colors.error }]}
           onPress={() => {
             Alert.alert(
-              t.profile.logout,
-              t.profile.logoutConfirm,
+              lang === 'es' ? 'Cerrar Sesion' : 'Log Out',
+              lang === 'es' ? 'Seguro que quieres cerrar sesion?' : 'Are you sure you want to log out?',
               [
                 { text: t.common.cancel, style: 'cancel' },
                 {
-                  text: 'OK',
+                  text: lang === 'es' ? 'Cerrar Sesion' : 'Log Out',
+                  style: 'destructive',
                   onPress: async () => {
+                    await AsyncStorage.removeItem('user_session');
                     await AsyncStorage.removeItem('onboarding_complete');
-                    router.replace('/onboarding');
+                    router.replace('/login');
                   },
                 },
               ]
@@ -283,7 +285,9 @@ export default function ProfileScreen() {
           }}
         >
           <Ionicons name="log-out-outline" size={20} color={Colors.error} />
-          <Text style={[styles.logoutText, { color: Colors.error }]}>{t.profile.logout}</Text>
+          <Text style={[styles.logoutText, { color: Colors.error }]}>
+            {lang === 'es' ? 'Cerrar Sesion' : 'Log Out'}
+          </Text>
         </Pressable>
 
         {/* Footer */}
@@ -295,7 +299,7 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+  container: { flex: 1 },
   inner: { padding: Layout.screenPadding, paddingBottom: 40 },
   title: {
     ...Typography.h2, color: Colors.textPrimary,

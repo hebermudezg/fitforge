@@ -12,8 +12,6 @@ import { DatabaseProvider } from '@/contexts/DatabaseContext';
 import { UserProvider } from '@/contexts/UserContext';
 import { MeasurementProvider } from '@/contexts/MeasurementContext';
 import { SubscriptionProvider } from '@/contexts/SubscriptionContext';
-import { ActivityIndicator, View } from 'react-native';
-import { Colors } from '@/constants/Colors';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -24,31 +22,40 @@ export default function RootLayout() {
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
     ...FontAwesome.font,
   });
-  const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
+  const [authState, setAuthState] = useState<'loading' | 'login' | 'onboarding' | 'app'>('loading');
 
   useEffect(() => {
     if (error) throw error;
   }, [error]);
 
   useEffect(() => {
-    AsyncStorage.getItem('onboarding_complete').then((val) => {
-      setOnboardingDone(val === 'true');
-      if (loaded) SplashScreen.hideAsync();
-    });
+    if (!loaded) return;
+    (async () => {
+      const session = await AsyncStorage.getItem('user_session');
+      const onboarded = await AsyncStorage.getItem('onboarding_complete');
+      if (session && onboarded === 'true') {
+        setAuthState('app');
+      } else if (session) {
+        setAuthState('onboarding');
+      } else {
+        setAuthState('login');
+      }
+      SplashScreen.hideAsync();
+    })();
   }, [loaded]);
 
-  if (!loaded || onboardingDone === null) return null;
+  if (!loaded || authState === 'loading') return null;
 
   return (
     <ThemeProvider>
       <I18nProvider>
-        <RootLayoutNav onboardingDone={onboardingDone} />
+        <RootLayoutNav authState={authState} />
       </I18nProvider>
     </ThemeProvider>
   );
 }
 
-function RootLayoutNav({ onboardingDone }: { onboardingDone: boolean }) {
+function RootLayoutNav({ authState }: { authState: 'login' | 'onboarding' | 'app' }) {
   const { colors, isDark } = useTheme();
 
   const navTheme = {
@@ -70,33 +77,36 @@ function RootLayoutNav({ onboardingDone }: { onboardingDone: boolean }) {
         <UserProvider>
           <MeasurementProvider>
             <SubscriptionProvider>
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="onboarding" />
-              <Stack.Screen name="(tabs)" />
-              <Stack.Screen name="measurement/[bodyPart]" options={{ presentation: 'modal' }} />
-              <Stack.Screen
-                name="history/[bodyPart]"
-                options={{
-                  headerShown: true,
-                  headerStyle: { backgroundColor: colors.surface },
-                  headerTintColor: colors.textPrimary,
-                  title: 'History',
-                }}
-              />
-              <Stack.Screen name="event/new" options={{ presentation: 'modal' }} />
-              <Stack.Screen
-                name="event/[id]"
-                options={{
-                  headerShown: true,
-                  headerStyle: { backgroundColor: colors.surface },
-                  headerTintColor: colors.textPrimary,
-                  title: 'Event',
-                }}
-              />
-              <Stack.Screen name="paywall" options={{ presentation: 'modal' }} />
-            </Stack>
-            {/* Redirect based on onboarding state */}
-            {onboardingDone && <Redirect href="/(tabs)" />}
+              <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="login" />
+                <Stack.Screen name="onboarding" />
+                <Stack.Screen name="(tabs)" />
+                <Stack.Screen name="measurement/[bodyPart]" options={{ presentation: 'modal' }} />
+                <Stack.Screen
+                  name="history/[bodyPart]"
+                  options={{
+                    headerShown: true,
+                    headerStyle: { backgroundColor: colors.surface },
+                    headerTintColor: colors.textPrimary,
+                    title: 'History',
+                  }}
+                />
+                <Stack.Screen name="event/new" options={{ presentation: 'modal' }} />
+                <Stack.Screen
+                  name="event/[id]"
+                  options={{
+                    headerShown: true,
+                    headerStyle: { backgroundColor: colors.surface },
+                    headerTintColor: colors.textPrimary,
+                    title: 'Event',
+                  }}
+                />
+                <Stack.Screen name="paywall" options={{ presentation: 'modal' }} />
+              </Stack>
+              {/* Auto-redirect based on auth state */}
+              {authState === 'app' && <Redirect href="/(tabs)" />}
+              {authState === 'onboarding' && <Redirect href="/onboarding" />}
+              {authState === 'login' && <Redirect href="/login" />}
             </SubscriptionProvider>
           </MeasurementProvider>
         </UserProvider>
