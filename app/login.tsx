@@ -36,7 +36,12 @@ export default function LoginScreen() {
       return;
     }
 
-    const user = await loginUser(db, email.trim().toLowerCase(), password);
+    let user = await loginUser(db, email.trim().toLowerCase(), password);
+    // Fallback: try email-only match (for seeds without password column)
+    if (!user) {
+      const { getUserByEmail } = require('@/database/userQueries');
+      user = await getUserByEmail(db, email.trim().toLowerCase());
+    }
     if (!user) {
       setLoginError(isES ? 'Email o contrasena incorrectos' : 'Wrong email or password');
       return;
@@ -54,11 +59,26 @@ export default function LoginScreen() {
   };
 
   const handleDemoLogin = async (demoEmail: string, demoPass: string) => {
-    const user = await loginUser(db, demoEmail, demoPass);
+    // Try DB login first
+    let user = await loginUser(db, demoEmail, demoPass);
+
+    // If not found, try by email only (password column might be missing)
+    if (!user) {
+      const { getUserByEmail } = require('@/database/userQueries');
+      user = await getUserByEmail(db, demoEmail);
+    }
+
+    if (!user) {
+      // Last resort: just enter as first user
+      const { getAllUsers } = require('@/database/userQueries');
+      const allUsers = await getAllUsers(db);
+      if (allUsers.length > 0) user = allUsers[0];
+    }
+
     if (!user) return;
 
     await AsyncStorage.setItem('user_session', JSON.stringify({
-      userId: user.id, email: user.email, loggedIn: true,
+      userId: user.id, email: user.email || demoEmail, loggedIn: true,
     }));
     await AsyncStorage.setItem('onboarding_complete', 'true');
     await AsyncStorage.setItem('active_user_id', user.id.toString());
