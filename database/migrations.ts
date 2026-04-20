@@ -31,6 +31,33 @@ const MIGRATIONS: Migration[] = [
       'ALTER TABLE users ADD COLUMN password TEXT DEFAULT NULL',
     ],
   },
+  {
+    version: 5,
+    statements: [
+      `CREATE TABLE IF NOT EXISTS workout_sessions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL REFERENCES users(id),
+        workout_name TEXT NOT NULL,
+        started_at TEXT NOT NULL DEFAULT (datetime('now')),
+        completed_at TEXT DEFAULT NULL,
+        total_exercises INTEGER NOT NULL DEFAULT 0,
+        completed_exercises INTEGER NOT NULL DEFAULT 0,
+        notes TEXT DEFAULT ''
+      )`,
+      `CREATE TABLE IF NOT EXISTS workout_sets (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        session_id INTEGER NOT NULL REFERENCES workout_sessions(id),
+        exercise_id TEXT NOT NULL,
+        exercise_name TEXT NOT NULL,
+        set_number INTEGER NOT NULL,
+        reps INTEGER DEFAULT NULL,
+        weight_kg REAL DEFAULT NULL,
+        completed INTEGER NOT NULL DEFAULT 0,
+        completed_at TEXT DEFAULT NULL
+      )`,
+      `CREATE INDEX IF NOT EXISTS idx_sessions_user ON workout_sessions(user_id, started_at DESC)`,
+    ],
+  },
 ];
 
 export async function runMigrations(db: SQLiteDatabase): Promise<void> {

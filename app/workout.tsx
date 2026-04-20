@@ -1,24 +1,37 @@
 import React, { useEffect, useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Haptics from 'expo-haptics';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useI18n } from '@/i18n';
+import { useUser } from '@/contexts/UserContext';
+import { useDatabase } from '@/contexts/DatabaseContext';
 import { Typography } from '@/constants/Typography';
 import { Layout } from '@/constants/Layout';
-import { useUser } from '@/contexts/UserContext';
-import { getTodayWorkout, getWeeklyPlan, type WorkoutDay, type Exercise } from '@/constants/exercises';
+import { getTodayWorkout, type Exercise } from '@/constants/exercises';
 import { getExerciseGif } from '@/constants/exerciseMedia';
+import {
+  startWorkoutSession, getActiveSession, getSessionSets,
+  completeSet, uncompleteSet, completeWorkoutSession,
+  type WorkoutSet,
+} from '@/database/workoutQueries';
 
 export default function WorkoutScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const { t, lang } = useI18n();
   const { user } = useUser();
+  const db = useDatabase();
+
   const [fitnessGoal, setFitnessGoal] = useState('build');
   const [expandedExercise, setExpandedExercise] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<number | null>(null);
+  const [sets, setSets] = useState<WorkoutSet[]>([]);
+  const [isWorkoutActive, setIsWorkoutActive] = useState(false);
 
   useEffect(() => {
     AsyncStorage.getItem('fitness_goal').then((g) => { if (g) setFitnessGoal(g); });
@@ -27,9 +40,76 @@ export default function WorkoutScreen() {
   const todayWorkout = getTodayWorkout(fitnessGoal, user.gender);
   const isRestDay = todayWorkout.muscleGroup === 'rest';
 
-  const toggleExercise = (id: string) => {
-    setExpandedExercise(expandedExercise === id ? null : id);
+  // Check for active session on mount
+  useEffect(() => {
+    (async () => {
+      const active = await getActiveSession(db, user.id);
+      if (active) {
+        setSessionId(active.id);
+        setIsWorkoutActive(true);
+        const s = await getSessionSets(db, active.id);
+        setSets(s);
+      }
+    })();
+  }, [db, user.id]);
+
+  const handleStartWorkout = async () => {
+    const exercises = todayWorkout.exercises.map((ex) => ({
+      id: ex.id, name: ex.name[lang], sets: ex.sets,
+    }));
+    const id = await startWorkoutSession(db, user.id, todayWorkout.label[lang], exercises);
+    setSessionId(id);
+    setIsWorkoutActive(true);
+    const s = await getSessionSets(db, id);
+    setSets(s);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
+
+  const handleToggleSet = async (set: WorkoutSet) => {
+    if (set.completed) {
+      await uncompleteSet(db, set.id);
+    } else {
+      await completeSet(db, set.id);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
+    if (sessionId) {
+      const s = await getSessionSets(db, sessionId);
+      setSets(s);
+    }
+  };
+
+  const handleFinishWorkout = async () => {
+    const msg = lang === 'es' ? 'Terminar entrenamiento?' : 'Finish workout?';
+    const confirmed = Platform.OS === 'web'
+      ? window.confirm(msg)
+      : await new Promise<boolean>((resolve) => {
+          Alert.alert('', msg, [
+            { text: lang === 'es' ? 'Cancelar' : 'Cancel', onPress: () => resolve(false) },
+            { text: 'OK', onPress: () => resolve(true) },
+          ]);
+        });
+    if (!confirmed) return;
+
+    if (sessionId) {
+      await completeWorkoutSession(db, sessionId);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+    setIsWorkoutActive(false);
+    setSessionId(null);
+    setSets([]);
+    router.back();
+  };
+
+  // Group sets by exercise
+  const exerciseSets: Record<string, WorkoutSet[]> = {};
+  for (const s of sets) {
+    if (!exerciseSets[s.exerciseId]) exerciseSets[s.exerciseId] = [];
+    exerciseSets[s.exerciseId].push(s);
+  }
+
+  const totalSets = sets.length;
+  const completedSets = sets.filter((s) => s.completed).length;
+  const progress = totalSets > 0 ? (completedSets / totalSets) * 100 : 0;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -41,7 +121,14 @@ export default function WorkoutScreen() {
         <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
           {t.workout.todaySession}
         </Text>
-        <View style={{ width: 24 }} />
+        {isWorkoutActive && (
+          <Pressable onPress={handleFinishWorkout}>
+            <Text style={[styles.finishText, { color: colors.success }]}>
+              {lang === 'es' ? 'Terminar' : 'Finish'}
+            </Text>
+          </Pressable>
+        )}
+        {!isWorkoutActive && <View style={{ width: 60 }} />}
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
@@ -60,116 +147,161 @@ export default function WorkoutScreen() {
           </Text>
         </View>
 
+        {/* Progress bar when active */}
+        {isWorkoutActive && (
+          <View style={styles.progressSection}>
+            <View style={styles.progressHeader}>
+              <Text style={[styles.progressText, { color: colors.textPrimary }]}>
+                {completedSets}/{totalSets} {lang === 'es' ? 'series' : 'sets'}
+              </Text>
+              <Text style={[styles.progressPercent, { color: colors.accent }]}>
+                {Math.round(progress)}%
+              </Text>
+            </View>
+            <View style={[styles.progressBar, { backgroundColor: colors.surfaceLight }]}>
+              <View style={[styles.progressFill, { width: `${progress}%`, backgroundColor: colors.accent }]} />
+            </View>
+          </View>
+        )}
+
         {isRestDay ? (
           <View style={styles.restContent}>
             <Ionicons name="leaf-outline" size={48} color={colors.textMuted} />
-            <Text style={[styles.restTitle, { color: colors.textPrimary }]}>
-              {t.dashboard.restDay}
-            </Text>
-            <Text style={[styles.restDesc, { color: colors.textSecondary }]}>
-              {t.dashboard.restDayDesc}
-            </Text>
-            <View style={[styles.restTips, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <Text style={[styles.restTipTitle, { color: colors.textPrimary }]}>
-                {lang === 'es' ? 'Recomendaciones' : 'Recommendations'}
-              </Text>
-              {[
-                { icon: 'water-outline', text: lang === 'es' ? 'Toma al menos 2-3 litros de agua' : 'Drink at least 2-3 liters of water' },
-                { icon: 'bed-outline', text: lang === 'es' ? 'Duerme 7-9 horas' : 'Sleep 7-9 hours' },
-                { icon: 'walk-outline', text: lang === 'es' ? 'Camina 20-30 minutos' : 'Walk 20-30 minutes' },
-                { icon: 'body-outline', text: lang === 'es' ? 'Estira los musculos trabajados' : 'Stretch worked muscles' },
-              ].map((tip, i) => (
-                <View key={i} style={styles.restTipRow}>
-                  <Ionicons name={tip.icon as any} size={18} color={colors.accent} />
-                  <Text style={[styles.restTipText, { color: colors.textSecondary }]}>{tip.text}</Text>
-                </View>
-              ))}
-            </View>
+            <Text style={[styles.restTitle, { color: colors.textPrimary }]}>{t.dashboard.restDay}</Text>
+            <Text style={[styles.restDesc, { color: colors.textSecondary }]}>{t.dashboard.restDayDesc}</Text>
           </View>
         ) : (
           <>
+            {/* Start workout button */}
+            {!isWorkoutActive && (
+              <Pressable onPress={handleStartWorkout} style={styles.startBtn}>
+                <LinearGradient
+                  colors={[colors.gradientPrimary[0], colors.gradientPrimary[1]] as [string, string]}
+                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                  style={styles.startGradient}
+                >
+                  <Ionicons name="play" size={22} color="#0D0D0D" />
+                  <Text style={styles.startText}>
+                    {lang === 'es' ? 'Iniciar Entrenamiento' : 'Start Workout'}
+                  </Text>
+                </LinearGradient>
+              </Pressable>
+            )}
+
             {/* Exercise list */}
             {todayWorkout.exercises.map((ex, i) => {
               const isExpanded = expandedExercise === ex.id;
+              const exSets = exerciseSets[ex.id] || [];
+              const exCompleted = exSets.filter((s) => s.completed).length;
+              const exTotal = exSets.length;
+              const allDone = exTotal > 0 && exCompleted === exTotal;
+
               return (
-                <Pressable
-                  key={ex.id}
-                  style={[styles.exerciseCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
-                  onPress={() => toggleExercise(ex.id)}
-                >
-                  {/* Exercise number + name */}
-                  <View style={styles.exerciseHeader}>
-                    <View style={[styles.exerciseNum, { backgroundColor: colors.accent }]}>
-                      <Text style={styles.exerciseNumText}>{i + 1}</Text>
+                <View key={ex.id} style={[styles.exerciseCard, { backgroundColor: colors.surface, borderColor: allDone ? colors.success + '50' : colors.border }]}>
+                  <Pressable style={styles.exerciseHeader} onPress={() => setExpandedExercise(isExpanded ? null : ex.id)}>
+                    <View style={[styles.exerciseNum, { backgroundColor: allDone ? colors.success : colors.accent }]}>
+                      {allDone
+                        ? <Ionicons name="checkmark" size={14} color="#0D0D0D" />
+                        : <Text style={styles.exerciseNumText}>{i + 1}</Text>
+                      }
                     </View>
                     <View style={styles.exerciseInfo}>
                       <Text style={[styles.exerciseName, { color: colors.textPrimary }]}>
                         {ex.name[lang]}
                       </Text>
                       <Text style={[styles.exerciseMeta, { color: colors.textMuted }]}>
-                        {ex.sets} {t.workout.sets} x {ex.reps} {t.workout.reps} · {ex.restSec}s {t.workout.rest}
+                        {ex.sets} {t.workout.sets} x {ex.reps} · {ex.restSec}s
+                        {isWorkoutActive && exTotal > 0 && ` · ${exCompleted}/${exTotal}`}
                       </Text>
                     </View>
-                    <Ionicons
-                      name={isExpanded ? 'chevron-up' : 'chevron-down'}
-                      size={20}
-                      color={colors.textMuted}
-                    />
-                  </View>
+                    <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={20} color={colors.textMuted} />
+                  </Pressable>
 
-                  {/* Expanded details */}
                   {isExpanded && (
                     <View style={[styles.exerciseDetails, { borderTopColor: colors.border }]}>
-                      {/* Exercise GIF/Image */}
+                      {/* GIF */}
                       {getExerciseGif(ex.id) && (
                         <View style={[styles.gifContainer, { backgroundColor: colors.surfaceLight }]}>
-                          <Image
-                            source={{ uri: getExerciseGif(ex.id)! }}
-                            style={styles.exerciseGif}
-                            resizeMode="contain"
-                          />
+                          <Image source={{ uri: getExerciseGif(ex.id)! }} style={styles.exerciseGif} resizeMode="contain" />
                         </View>
                       )}
 
-                      {/* Description */}
+                      {/* Description + Tips */}
                       <View style={styles.detailRow}>
                         <Ionicons name="information-circle-outline" size={16} color={colors.accent} />
-                        <Text style={[styles.detailText, { color: colors.textSecondary }]}>
-                          {ex.description[lang]}
-                        </Text>
+                        <Text style={[styles.detailText, { color: colors.textSecondary }]}>{ex.description[lang]}</Text>
                       </View>
-
-                      {/* Tips */}
                       <View style={styles.detailRow}>
                         <Ionicons name="bulb-outline" size={16} color={colors.warning} />
-                        <Text style={[styles.detailText, { color: colors.textSecondary }]}>
-                          {ex.tips[lang]}
-                        </Text>
+                        <Text style={[styles.detailText, { color: colors.textSecondary }]}>{ex.tips[lang]}</Text>
                       </View>
 
-                      {/* Muscles targeted */}
+                      {/* Interactive sets when workout active */}
+                      {isWorkoutActive && exSets.length > 0 && (
+                        <View style={styles.setsSection}>
+                          <Text style={[styles.setsTitle, { color: colors.textMuted }]}>
+                            {lang === 'es' ? 'SERIES' : 'SETS'}
+                          </Text>
+                          {exSets.map((set) => (
+                            <Pressable
+                              key={set.id}
+                              style={[
+                                styles.setRow,
+                                { borderBottomColor: colors.border },
+                                set.completed && { backgroundColor: colors.success + '10' },
+                              ]}
+                              onPress={() => handleToggleSet(set)}
+                            >
+                              <Ionicons
+                                name={set.completed ? 'checkmark-circle' : 'ellipse-outline'}
+                                size={24}
+                                color={set.completed ? colors.success : colors.textMuted}
+                              />
+                              <Text style={[styles.setLabel, { color: colors.textPrimary }]}>
+                                {lang === 'es' ? 'Serie' : 'Set'} {set.setNumber}
+                              </Text>
+                              <Text style={[styles.setReps, { color: colors.textSecondary }]}>
+                                {ex.reps} {t.workout.reps}
+                              </Text>
+                              {set.completed && (
+                                <Ionicons name="checkmark" size={16} color={colors.success} />
+                              )}
+                            </Pressable>
+                          ))}
+                        </View>
+                      )}
+
+                      {/* Muscles */}
                       <View style={styles.muscleChips}>
-                        {ex.muscles.map((muscle) => (
-                          <View key={muscle} style={[styles.muscleChip, { backgroundColor: colors.accent + '15', borderColor: colors.accent + '30' }]}>
-                            <Text style={[styles.muscleChipText, { color: colors.accent }]}>
-                              {muscle}
-                            </Text>
+                        {ex.muscles.map((m) => (
+                          <View key={m} style={[styles.muscleChip, { backgroundColor: colors.accent + '15', borderColor: colors.accent + '30' }]}>
+                            <Text style={[styles.muscleChipText, { color: colors.accent }]}>{m}</Text>
                           </View>
                         ))}
                       </View>
                     </View>
                   )}
-                </Pressable>
+                </View>
               );
             })}
+
+            {/* Finish button when active */}
+            {isWorkoutActive && (
+              <Pressable onPress={handleFinishWorkout} style={[styles.finishBtn, { borderColor: colors.success }]}>
+                <Ionicons name="checkmark-done" size={22} color={colors.success} />
+                <Text style={[styles.finishBtnText, { color: colors.success }]}>
+                  {lang === 'es' ? 'Terminar Entrenamiento' : 'Finish Workout'}
+                </Text>
+              </Pressable>
+            )}
 
             {/* Science note */}
             <View style={[styles.scienceNote, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <Ionicons name="school-outline" size={16} color={colors.textMuted} />
               <Text style={[styles.scienceText, { color: colors.textMuted }]}>
                 {lang === 'es'
-                  ? 'Rutina basada en evidencia cientifica. Frecuencia 2x/semana por grupo muscular (Schoenfeld et al., 2016). Volumen de 10-20 series semanales por musculo (Schoenfeld et al., 2017).'
-                  : 'Evidence-based routine. 2x/week frequency per muscle group (Schoenfeld et al., 2016). 10-20 weekly sets per muscle (Schoenfeld et al., 2017).'}
+                  ? 'Basado en evidencia cientifica (Schoenfeld et al., 2016; Contreras et al., 2019).'
+                  : 'Based on scientific evidence (Schoenfeld et al., 2016; Contreras et al., 2019).'}
               </Text>
             </View>
           </>
@@ -187,55 +319,77 @@ const styles = StyleSheet.create({
   },
   backBtn: { padding: 4 },
   headerTitle: { ...Typography.h3 },
+  finishText: { ...Typography.body, fontWeight: '700' },
   content: { padding: Layout.screenPadding, paddingBottom: 40 },
 
   workoutHeader: {
     alignItems: 'center', padding: Layout.spacing.lg,
-    borderRadius: 16, borderWidth: 1, marginBottom: Layout.spacing.lg,
+    borderRadius: 16, borderWidth: 1, marginBottom: Layout.spacing.md,
   },
   workoutIcon: { width: 60, height: 60, borderRadius: 30, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
   workoutName: { ...Typography.h2, marginBottom: 4 },
   workoutMeta: { ...Typography.body },
 
-  // Rest day
+  // Progress
+  progressSection: { marginBottom: Layout.spacing.md },
+  progressHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
+  progressText: { ...Typography.body, fontWeight: '600' },
+  progressPercent: { ...Typography.body, fontWeight: '800' },
+  progressBar: { height: 8, borderRadius: 4 },
+  progressFill: { height: 8, borderRadius: 4 },
+
+  // Start button
+  startBtn: { borderRadius: 14, overflow: 'hidden', marginBottom: Layout.spacing.lg },
+  startGradient: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 10, paddingVertical: 16,
+  },
+  startText: { ...Typography.h3, color: '#0D0D0D', fontWeight: '800' },
+
+  // Rest
   restContent: { alignItems: 'center', paddingVertical: Layout.spacing.xl },
   restTitle: { ...Typography.h2, marginTop: Layout.spacing.md },
   restDesc: { ...Typography.body, marginTop: 4, textAlign: 'center' },
-  restTips: { marginTop: Layout.spacing.lg, padding: Layout.cardPadding, borderRadius: 14, borderWidth: 1, width: '100%' },
-  restTipTitle: { ...Typography.h3, marginBottom: Layout.spacing.md },
-  restTipRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
-  restTipText: { ...Typography.body, flex: 1 },
 
   // Exercise card
-  exerciseCard: {
-    borderRadius: 14, borderWidth: 1, marginBottom: Layout.spacing.sm, overflow: 'hidden',
-  },
-  exerciseHeader: {
-    flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12,
-  },
-  exerciseNum: {
-    width: 30, height: 30, borderRadius: 15,
-    alignItems: 'center', justifyContent: 'center',
-  },
+  exerciseCard: { borderRadius: 14, borderWidth: 1, marginBottom: Layout.spacing.sm, overflow: 'hidden' },
+  exerciseHeader: { flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12 },
+  exerciseNum: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
   exerciseNumText: { fontSize: 13, fontWeight: '800', color: '#0D0D0D' },
   exerciseInfo: { flex: 1 },
   exerciseName: { ...Typography.body, fontWeight: '700' },
   exerciseMeta: { ...Typography.caption, marginTop: 2 },
 
-  // Expanded details
+  // Details
   exerciseDetails: { padding: 14, paddingTop: 10, borderTopWidth: 1, gap: 10 },
-  gifContainer: {
-    borderRadius: 10, overflow: 'hidden', alignItems: 'center',
-    marginBottom: 4,
-  },
+  gifContainer: { borderRadius: 10, overflow: 'hidden', alignItems: 'center', marginBottom: 4 },
   exerciseGif: { width: '100%', height: 200, borderRadius: 10 },
   detailRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-start' },
   detailText: { ...Typography.bodySmall, flex: 1, lineHeight: 20 },
+
+  // Interactive sets
+  setsSection: { marginTop: 4 },
+  setsTitle: { ...Typography.label, marginBottom: 6 },
+  setRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    paddingVertical: 10, borderBottomWidth: 1,
+  },
+  setLabel: { ...Typography.body, flex: 1, fontWeight: '600' },
+  setReps: { ...Typography.bodySmall },
+
+  // Muscles
   muscleChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 4 },
   muscleChip: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, borderWidth: 1 },
   muscleChipText: { ...Typography.caption, fontWeight: '600' },
 
-  // Science note
+  // Finish
+  finishBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 8, paddingVertical: 16, borderRadius: 14, borderWidth: 2, marginTop: Layout.spacing.lg,
+  },
+  finishBtnText: { ...Typography.h3, fontWeight: '800' },
+
+  // Science
   scienceNote: {
     flexDirection: 'row', gap: 8, padding: 12, borderRadius: 12, borderWidth: 1,
     marginTop: Layout.spacing.md, alignItems: 'flex-start',

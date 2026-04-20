@@ -21,6 +21,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useI18n } from '@/i18n';
 import { Typography } from '@/constants/Typography';
 import { Layout } from '@/constants/Layout';
+import { setupNotifications } from '@/utils/notifications';
 
 const STEPS = ['welcome', 'disclaimer', 'profile', 'goals'] as const;
 type Step = typeof STEPS[number];
@@ -95,6 +96,9 @@ export default function OnboardingScreen() {
 
       await AsyncStorage.setItem('onboarding_complete', 'true');
       await AsyncStorage.setItem('fitness_goal', goal);
+
+      // Setup push notifications
+      await setupNotifications(lang as 'en' | 'es');
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.replace('/(tabs)');
