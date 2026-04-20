@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, TextInput, View, KeyboardAvoidingView, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -8,7 +8,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useI18n } from '@/i18n';
 import { useDatabase } from '@/contexts/DatabaseContext';
-import { loginUser, getAllUsers } from '@/database/userQueries';
+import { loginUser, getUserByEmail, getAllUsers } from '@/database/userQueries';
 import { Typography } from '@/constants/Typography';
 import { Layout } from '@/constants/Layout';
 
@@ -37,9 +37,8 @@ export default function LoginScreen() {
     }
 
     let user = await loginUser(db, email.trim().toLowerCase(), password);
-    // Fallback: try email-only match (for seeds without password column)
+    // Fallback: email-only
     if (!user) {
-      const { getUserByEmail } = require('@/database/userQueries');
       user = await getUserByEmail(db, email.trim().toLowerCase());
     }
     if (!user) {
@@ -55,24 +54,20 @@ export default function LoginScreen() {
     await AsyncStorage.setItem('onboarding_complete', 'true');
     await AsyncStorage.setItem('active_user_id', user.id.toString());
     if (user.gender) await AsyncStorage.setItem('fitness_goal', 'build');
-    router.replace('/(tabs)');
+    if (Platform.OS === 'web') {
+      window.location.href = '/';
+    } else {
+      router.replace('/(tabs)');
+    }
   };
 
   const handleDemoLogin = async (demoEmail: string, demoPass: string) => {
-    // Try DB login first
+    // Try login by email+password
     let user = await loginUser(db, demoEmail, demoPass);
 
-    // If not found, try by email only (password column might be missing)
+    // Fallback: find by email only
     if (!user) {
-      const { getUserByEmail } = require('@/database/userQueries');
       user = await getUserByEmail(db, demoEmail);
-    }
-
-    if (!user) {
-      // Last resort: just enter as first user
-      const { getAllUsers } = require('@/database/userQueries');
-      const allUsers = await getAllUsers(db);
-      if (allUsers.length > 0) user = allUsers[0];
     }
 
     if (!user) return;
@@ -82,7 +77,12 @@ export default function LoginScreen() {
     }));
     await AsyncStorage.setItem('onboarding_complete', 'true');
     await AsyncStorage.setItem('active_user_id', user.id.toString());
-    router.replace('/(tabs)');
+    // Force full reload to pick up new user in all contexts
+    if (Platform.OS === 'web') {
+      window.location.href = '/';
+    } else {
+      router.replace('/(tabs)');
+    }
   };
 
   const DEMO_PROFILES = [

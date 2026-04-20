@@ -77,20 +77,46 @@ export function BodyModel({
 
   const activePart = selectedPart || (hoveredSlug ? SLUG_TO_MUSCLE[hoveredSlug] : null) as BodyPartKey | null;
 
-  // Build highlight data with intensity-based colors
+  // Calculate overall muscularity for body scale
+  const overallMuscularity = useMemo(() => {
+    let total = 0, count = 0;
+    for (const [key, m] of Object.entries(measurements)) {
+      const muscleKey = key as MuscleKey;
+      if (!MUSCLE_TO_SLUG[muscleKey] || !m) continue;
+      const intensity = getMuscleIntensity(muscleKey, (m as any).value, gender);
+      total += intensity;
+      count++;
+    }
+    return count > 0 ? total / count : 1.5;
+  }, [measurements, gender]);
+
+  // Body scale: 0.95 for beginner, 1.0 normal, 1.08 muscular
+  const bodyScale = useMemo(() => {
+    const base = Math.min(SCREEN_WIDTH * 0.0026, 1.4);
+    const muscleFactor = 0.92 + (overallMuscularity / 3) * 0.16;
+    return base * muscleFactor;
+  }, [overallMuscularity]);
+
+  // Build highlight data — strokeWidth varies by muscle size
   const bodyData: ExtendedBodyPart[] = useMemo(() => {
     const data: ExtendedBodyPart[] = [];
 
     for (const [key, slug] of Object.entries(MUSCLE_TO_SLUG)) {
       const m = measurements[key as BodyPartKey];
       if (!m) continue;
-      const intensity = getMuscleIntensity(key as MuscleKey, m.value, gender);
-      // Color intensity: 1=light, 2=medium, 3=strong
-      const alphas = ['30', '60', '90'];
+      const intensity = getMuscleIntensity(key as MuscleKey, (m as any).value, gender);
+      // Color: beginner=subtle, intermediate=medium, advanced=vivid
+      const colorMap = [colors.accent + '25', colors.accent + '55', colors.accent + 'CC'];
+      // StrokeWidth: bigger muscles = thicker outline = looks bigger
+      const strokeMap = [0.5, 1.2, 2.5];
       data.push({
         slug,
         intensity,
-        color: colors.accent + (alphas[intensity - 1] || '60'),
+        color: colorMap[intensity - 1],
+        styles: {
+          strokeWidth: strokeMap[intensity - 1],
+          stroke: intensity === 3 ? colors.accent : isDark ? '#555' : '#BBB',
+        },
       });
     }
 
@@ -194,7 +220,7 @@ export function BodyModel({
     es: { 1: 'Principiante', 2: 'Intermedio', 3: 'Avanzado' },
   };
 
-  const scale = Math.min(SCREEN_WIDTH * 0.0026, 1.4);
+  const scale = bodyScale;
 
   return (
     <View style={styles.container}>

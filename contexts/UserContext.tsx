@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { AppState } from 'react-native';
 import type { User, Goal } from '@/types/models';
 import type { BodyPartKey } from '@/types/bodyParts';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -39,6 +40,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     loadUser();
+    // Reload user when app comes to foreground (after login switch)
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') loadUser();
+    });
+    return () => sub.remove();
   }, [loadUser]);
 
   const handleUpdateUser = useCallback(async (
