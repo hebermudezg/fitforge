@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -9,6 +9,7 @@ import { useI18n } from '@/i18n';
 import { Typography } from '@/constants/Typography';
 import { Layout } from '@/constants/Layout';
 import { getTodayWorkout, getWeeklyPlan, type WorkoutDay, type Exercise } from '@/constants/exercises';
+import { getExerciseGif } from '@/constants/exerciseMedia';
 
 export default function WorkoutScreen() {
   const router = useRouter();
@@ -117,6 +118,17 @@ export default function WorkoutScreen() {
                   {/* Expanded details */}
                   {isExpanded && (
                     <View style={[styles.exerciseDetails, { borderTopColor: colors.border }]}>
+                      {/* Exercise GIF/Image */}
+                      {getExerciseGif(ex.id) && (
+                        <View style={[styles.gifContainer, { backgroundColor: colors.surfaceLight }]}>
+                          <Image
+                            source={{ uri: getExerciseGif(ex.id)! }}
+                            style={styles.exerciseGif}
+                            resizeMode="contain"
+                          />
+                        </View>
+                      )}
+
                       {/* Description */}
                       <View style={styles.detailRow}>
                         <Ionicons name="information-circle-outline" size={16} color={colors.accent} />
@@ -210,6 +222,11 @@ const styles = StyleSheet.create({
 
   // Expanded details
   exerciseDetails: { padding: 14, paddingTop: 10, borderTopWidth: 1, gap: 10 },
+  gifContainer: {
+    borderRadius: 10, overflow: 'hidden', alignItems: 'center',
+    marginBottom: 4,
+  },
+  exerciseGif: { width: '100%', height: 200, borderRadius: 10 },
   detailRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-start' },
   detailText: { ...Typography.bodySmall, flex: 1, lineHeight: 20 },
   muscleChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 4 },
