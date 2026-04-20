@@ -150,21 +150,21 @@ export default function DashboardScreen() {
         {/* Streak + Achievements */}
         <View style={styles.streakRow}>
           <View style={[styles.streakCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Text style={styles.streakEmoji}>🔥</Text>
+            <Ionicons name="flame-outline" size={22} color={colors.accent} />
             <Text style={[styles.streakNum, { color: colors.accent }]}>{userStats.streakDays}</Text>
             <Text style={[styles.streakLabel, { color: colors.textMuted }]}>
               {lang === 'es' ? 'Racha' : 'Streak'}
             </Text>
           </View>
           <View style={[styles.streakCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Text style={styles.streakEmoji}>🏆</Text>
+            <Ionicons name="trophy-outline" size={22} color={colors.accent} />
             <Text style={[styles.streakNum, { color: colors.accent }]}>{unlockedBadges.length}</Text>
             <Text style={[styles.streakLabel, { color: colors.textMuted }]}>
               {lang === 'es' ? 'Logros' : 'Badges'}
             </Text>
           </View>
           <View style={[styles.streakCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Text style={styles.streakEmoji}>📊</Text>
+            <Ionicons name="bar-chart-outline" size={22} color={colors.accent} />
             <Text style={[styles.streakNum, { color: colors.accent }]}>{userStats.totalMeasurements}</Text>
             <Text style={[styles.streakLabel, { color: colors.textMuted }]}>
               {lang === 'es' ? 'Medidas' : 'Records'}
@@ -338,7 +338,6 @@ const styles = StyleSheet.create({
   streakCard: {
     flex: 1, alignItems: 'center', padding: 12, borderRadius: 14, borderWidth: 1, gap: 2,
   },
-  streakEmoji: { fontSize: 20 },
   streakNum: { ...Typography.h2, fontWeight: '800' },
   streakLabel: { ...Typography.caption, fontWeight: '600' },
   nextGoalsCard: {
