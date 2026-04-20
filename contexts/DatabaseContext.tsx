@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import * as SQLite from 'expo-sqlite';
 import { runMigrations } from '@/database/migrations';
 import { seedDatabase } from '@/database/seedData';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { Colors } from '@/constants/Colors';
 
 type SQLiteDatabase = SQLite.SQLiteDatabase;
@@ -15,16 +15,34 @@ const DatabaseContext = createContext<DatabaseContextType | null>(null);
 
 export function DatabaseProvider({ children }: { children: React.ReactNode }) {
   const [db, setDb] = useState<SQLiteDatabase | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
-      const database = await SQLite.openDatabaseAsync('fitforge.db');
-      await database.execAsync('PRAGMA journal_mode = WAL;');
-      await runMigrations(database);
-      await seedDatabase(database);
-      setDb(database);
+      try {
+        const database = await SQLite.openDatabaseAsync('fitforge.db');
+        await database.execAsync('PRAGMA journal_mode = WAL;');
+        await runMigrations(database);
+        try {
+          await seedDatabase(database);
+        } catch (seedErr: any) {
+          console.warn('Seed warning:', seedErr.message);
+        }
+        setDb(database);
+      } catch (e: any) {
+        console.error('Database init error:', e);
+        setError(e.message || 'Database error');
+      }
     })();
   }, []);
+
+  if (error) {
+    return (
+      <View style={styles.loading}>
+        <Text style={styles.errorText}>DB Error: {error}</Text>
+      </View>
+    );
+  }
 
   if (!db) {
     return (
@@ -53,5 +71,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: Colors.background,
+  },
+  errorText: {
+    color: '#F87171',
+    fontSize: 14,
+    textAlign: 'center',
+    padding: 20,
   },
 });
