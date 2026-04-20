@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Colors } from '@/constants/Colors';
+import { useTheme } from '@/contexts/ThemeContext';
 import { Layout } from '@/constants/Layout';
 import { Typography } from '@/constants/Typography';
 
@@ -11,23 +11,24 @@ interface SegmentedControlProps {
 }
 
 export function SegmentedControl({ options, selectedIndex, onSelect }: SegmentedControlProps) {
+  const { colors } = useTheme();
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.surface, borderColor: colors.border }]}>
       {options.map((option, index) => (
         <Pressable
           key={option}
           onPress={() => onSelect(index)}
           style={[
             styles.option,
-            index === selectedIndex && styles.optionSelected,
+            index === selectedIndex && { backgroundColor: colors.accent },
           ]}
         >
-          <Text
-            style={[
-              styles.optionText,
-              index === selectedIndex && styles.optionTextSelected,
-            ]}
-          >
+          <Text style={[
+            styles.optionText,
+            { color: colors.textMuted },
+            index === selectedIndex && { color: '#0D0D0D', fontWeight: '600' },
+          ]}>
             {option}
           </Text>
         </Pressable>
@@ -39,11 +40,9 @@ export function SegmentedControl({ options, selectedIndex, onSelect }: Segmented
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    backgroundColor: Colors.surface,
     borderRadius: Layout.chipBorderRadius,
     padding: 3,
     borderWidth: 1,
-    borderColor: Colors.border,
   },
   option: {
     flex: 1,
@@ -51,15 +50,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: Layout.chipBorderRadius - 3,
   },
-  optionSelected: {
-    backgroundColor: Colors.accent,
-  },
   optionText: {
     ...Typography.bodySmall,
-    color: Colors.textMuted,
-  },
-  optionTextSelected: {
-    color: Colors.textPrimary,
-    fontWeight: '600',
   },
 });
