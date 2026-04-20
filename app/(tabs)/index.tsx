@@ -18,6 +18,8 @@ import { getRelativeDate } from '@/utils/formatting';
 import { getTodayWorkout, getWeeklyPlan } from '@/constants/exercises';
 import { getDailyQuote, getGreeting } from '@/constants/quotes';
 import { useSubscription } from '@/contexts/SubscriptionContext';
+import { useUserStats } from '@/hooks/useUserStats';
+import { getUnlockedAchievements, getNextAchievements } from '@/constants/achievements';
 
 export default function DashboardScreen() {
   const router = useRouter();
@@ -26,6 +28,9 @@ export default function DashboardScreen() {
   const { user } = useUser();
   const { latestMeasurements, recentMeasurements } = useMeasurements();
   const { tier, isPro } = useSubscription();
+  const userStats = useUserStats();
+  const unlockedBadges = getUnlockedAchievements(userStats);
+  const nextGoals = getNextAchievements(userStats, 3);
 
   const [fitnessGoal, setFitnessGoal] = useState<string>('build');
   useEffect(() => {
@@ -141,6 +146,61 @@ export default function DashboardScreen() {
             </Text>
           </View>
         </View>
+
+        {/* Streak + Achievements */}
+        <View style={styles.streakRow}>
+          <View style={[styles.streakCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Text style={styles.streakEmoji}>🔥</Text>
+            <Text style={[styles.streakNum, { color: colors.accent }]}>{userStats.streakDays}</Text>
+            <Text style={[styles.streakLabel, { color: colors.textMuted }]}>
+              {lang === 'es' ? 'Racha' : 'Streak'}
+            </Text>
+          </View>
+          <View style={[styles.streakCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Text style={styles.streakEmoji}>🏆</Text>
+            <Text style={[styles.streakNum, { color: colors.accent }]}>{unlockedBadges.length}</Text>
+            <Text style={[styles.streakLabel, { color: colors.textMuted }]}>
+              {lang === 'es' ? 'Logros' : 'Badges'}
+            </Text>
+          </View>
+          <View style={[styles.streakCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Text style={styles.streakEmoji}>📊</Text>
+            <Text style={[styles.streakNum, { color: colors.accent }]}>{userStats.totalMeasurements}</Text>
+            <Text style={[styles.streakLabel, { color: colors.textMuted }]}>
+              {lang === 'es' ? 'Medidas' : 'Records'}
+            </Text>
+          </View>
+        </View>
+
+        {/* Next achievements to unlock */}
+        {nextGoals.length > 0 && (
+          <View style={[styles.nextGoalsCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Text style={[styles.nextGoalsTitle, { color: colors.textPrimary }]}>
+              {lang === 'es' ? 'Proximo logro' : 'Next achievement'}
+            </Text>
+            {nextGoals.slice(0, 2).map((goal) => (
+              <View key={goal.id} style={styles.nextGoalRow}>
+                <Ionicons name={(goal.icon + '-outline') as any} size={18} color={colors.textMuted} />
+                <View style={styles.nextGoalInfo}>
+                  <Text style={[styles.nextGoalName, { color: colors.textSecondary }]}>{goal.name[lang]}</Text>
+                  <Text style={[styles.nextGoalDesc, { color: colors.textMuted }]}>{goal.description[lang]}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Unlocked badges display */}
+        {unlockedBadges.length > 0 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.badgeScroll}>
+            {unlockedBadges.map((badge) => (
+              <View key={badge.id} style={[styles.badgeChip, { backgroundColor: colors.accent + '15', borderColor: colors.accent + '40' }]}>
+                <Ionicons name={badge.icon as any} size={14} color={colors.accent} />
+                <Text style={[styles.badgeText, { color: colors.accent }]}>{badge.name[lang]}</Text>
+              </View>
+            ))}
+          </ScrollView>
+        )}
 
         {/* All body measurements summary */}
         <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
@@ -272,6 +332,30 @@ const styles = StyleSheet.create({
   },
   weekDayLabel: { ...Typography.caption, fontWeight: '700', fontSize: 10 },
   weekDayType: { ...Typography.caption, fontSize: 9 },
+
+  // Gamification
+  streakRow: { flexDirection: 'row', gap: Layout.spacing.sm, marginTop: Layout.spacing.md },
+  streakCard: {
+    flex: 1, alignItems: 'center', padding: 12, borderRadius: 14, borderWidth: 1, gap: 2,
+  },
+  streakEmoji: { fontSize: 20 },
+  streakNum: { ...Typography.h2, fontWeight: '800' },
+  streakLabel: { ...Typography.caption, fontWeight: '600' },
+  nextGoalsCard: {
+    borderRadius: 14, borderWidth: 1, padding: 14, marginTop: Layout.spacing.sm, gap: 10,
+  },
+  nextGoalsTitle: { ...Typography.bodySmall, fontWeight: '700' },
+  nextGoalRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  nextGoalInfo: { flex: 1 },
+  nextGoalName: { ...Typography.bodySmall, fontWeight: '600' },
+  nextGoalDesc: { ...Typography.caption },
+  badgeScroll: { marginTop: Layout.spacing.sm },
+  badgeChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingHorizontal: 10, paddingVertical: 6, borderRadius: 20,
+    borderWidth: 1, marginRight: 6,
+  },
+  badgeText: { ...Typography.caption, fontWeight: '700' },
 
   sectionTitle: { ...Typography.h3, marginBottom: Layout.spacing.sm, marginTop: Layout.spacing.md },
 
