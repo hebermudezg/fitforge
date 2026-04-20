@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,7 +14,7 @@ import { Layout } from '@/constants/Layout';
 import { BODY_PARTS, BODY_PART_KEYS, type BodyPartKey } from '@/types/bodyParts';
 import { convertValue, getDisplayUnit } from '@/utils/conversions';
 import { getRelativeDate } from '@/utils/formatting';
-import { getTodayWorkout } from '@/constants/exercises';
+import { getTodayWorkout, getWeeklyPlan } from '@/constants/exercises';
 import { getDailyQuote, getGreeting } from '@/constants/quotes';
 
 export default function DashboardScreen() {
@@ -23,10 +24,19 @@ export default function DashboardScreen() {
   const { user } = useUser();
   const { latestMeasurements, recentMeasurements } = useMeasurements();
 
+  const [fitnessGoal, setFitnessGoal] = useState<string>('build');
+  useEffect(() => {
+    AsyncStorage.getItem('fitness_goal').then((g) => { if (g) setFitnessGoal(g); });
+  }, []);
+
   const greeting = getGreeting(lang);
   const quote = getDailyQuote();
-  const todayWorkout = getTodayWorkout();
+  const todayWorkout = getTodayWorkout(fitnessGoal);
+  const weeklyPlan = getWeeklyPlan(fitnessGoal);
   const isRestDay = todayWorkout.muscleGroup === 'rest';
+  const todayDayIndex = new Date().getDay();
+  const todayPlanIndex = todayDayIndex === 0 ? 6 : todayDayIndex - 1;
+  const DAY_LABELS = [t.workout.monday, t.workout.tuesday, t.workout.wednesday, t.workout.thursday, t.workout.friday, t.workout.saturday, t.workout.sunday];
 
   const weightM = latestMeasurements.weight;
   const bodyFatM = latestMeasurements.bodyFat;
@@ -75,6 +85,28 @@ export default function DashboardScreen() {
           </View>
           {!isRestDay && <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />}
         </Pressable>
+
+        {/* Weekly Plan Strip */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.weekStrip} contentContainerStyle={styles.weekStripContent}>
+          {weeklyPlan.map((day, i) => {
+            const isToday = i === todayPlanIndex;
+            const isRest = day.muscleGroup === 'rest' || day.muscleGroup === 'cardio';
+            return (
+              <View key={day.dayKey} style={[
+                styles.weekDay,
+                { backgroundColor: isToday ? colors.accent : colors.surface, borderColor: isToday ? colors.accent : colors.border },
+              ]}>
+                <Text style={[styles.weekDayLabel, { color: isToday ? '#0D0D0D' : colors.textMuted }]}>
+                  {DAY_LABELS[i]}
+                </Text>
+                <Ionicons name={day.icon as any} size={16} color={isToday ? '#0D0D0D' : isRest ? colors.textMuted : colors.accent} />
+                <Text style={[styles.weekDayType, { color: isToday ? '#0D0D0D' : colors.textSecondary }]} numberOfLines={1}>
+                  {day.label[lang].split(' ')[0]}
+                </Text>
+              </View>
+            );
+          })}
+        </ScrollView>
 
         {/* Body Stats Grid */}
         <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
@@ -202,6 +234,15 @@ const styles = StyleSheet.create({
   workoutInfo: { flex: 1 },
   workoutTitle: { ...Typography.body, fontWeight: '700' },
   workoutSub: { ...Typography.caption, marginTop: 2 },
+
+  weekStrip: { marginBottom: Layout.spacing.sm },
+  weekStripContent: { gap: 6 },
+  weekDay: {
+    alignItems: 'center', paddingVertical: 8, paddingHorizontal: 10,
+    borderRadius: 10, borderWidth: 1, minWidth: 52, gap: 3,
+  },
+  weekDayLabel: { ...Typography.caption, fontWeight: '700', fontSize: 10 },
+  weekDayType: { ...Typography.caption, fontSize: 9 },
 
   sectionTitle: { ...Typography.h3, marginBottom: Layout.spacing.sm, marginTop: Layout.spacing.md },
 

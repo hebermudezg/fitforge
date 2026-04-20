@@ -40,6 +40,7 @@ export default function OnboardingScreen() {
   const [heightCm, setHeightCm] = useState('');
   const [weightKg, setWeightKg] = useState('');
   const [age, setAge] = useState('');
+  const [phone, setPhone] = useState('');
   const [goalIndex, setGoalIndex] = useState(0);
   const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
   const [langIndex, setLangIndex] = useState(lang === 'en' ? 0 : 1);
@@ -76,24 +77,24 @@ export default function OnboardingScreen() {
         dob = d.toISOString().split('T')[0];
       }
 
-      // Save user profile
+      // Save ALL to DB — terms, goal, phone, profile
       await updateUser({
         name: name.trim(),
         gender: gender as 'male' | 'female',
         heightCm: !isNaN(height) && height > 0 ? height : undefined,
         dateOfBirth: dob,
-      });
+        phone: phone.trim() || undefined,
+        termsAccepted: true,
+        fitnessGoal: goal,
+      } as any);
 
-      // Save initial weight as first measurement
+      // Save initial weight
       if (!isNaN(weight) && weight > 0) {
         await addMeasurement('weight', weight);
       }
 
-      // Save terms acceptance and goal
       await AsyncStorage.setItem('onboarding_complete', 'true');
       await AsyncStorage.setItem('fitness_goal', goal);
-      await AsyncStorage.setItem('terms_accepted', 'true');
-      await AsyncStorage.setItem('terms_accepted_at', new Date().toISOString());
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.replace('/(tabs)');
@@ -229,6 +230,16 @@ export default function OnboardingScreen() {
               value={weightKg} onChangeText={setWeightKg}
               placeholder="70" placeholderTextColor={colors.textMuted}
               keyboardType="decimal-pad"
+            />
+
+            <Text style={[styles.fieldLabel, { color: colors.textMuted }]}>
+              {lang === 'es' ? 'TELEFONO (opcional)' : 'PHONE (optional)'}
+            </Text>
+            <TextInput
+              style={[styles.input, { color: colors.textPrimary, backgroundColor: colors.surface, borderColor: colors.border }]}
+              value={phone} onChangeText={setPhone}
+              placeholder="+57 300 123 4567" placeholderTextColor={colors.textMuted}
+              keyboardType="phone-pad"
             />
           </View>
         )}

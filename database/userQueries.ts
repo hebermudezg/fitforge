@@ -30,9 +30,17 @@ function rowToUser(row: UserRow): User {
 }
 
 export async function getOrCreateUser(db: SQLiteDatabase): Promise<User> {
-  const row = await db.getFirstAsync<UserRow>('SELECT * FROM users LIMIT 1');
-  if (row) return rowToUser(row);
+  // Prefer real user (terms accepted) over seed/demo users
+  const realUser = await db.getFirstAsync<UserRow>(
+    'SELECT * FROM users WHERE terms_accepted = 1 ORDER BY id DESC LIMIT 1'
+  );
+  if (realUser) return rowToUser(realUser);
 
+  // Fallback to any user
+  const anyUser = await db.getFirstAsync<UserRow>('SELECT * FROM users LIMIT 1');
+  if (anyUser) return rowToUser(anyUser);
+
+  // Create new empty user
   const result = await db.runAsync(
     "INSERT INTO users (name, gender, unit_system) VALUES ('', 'male', 'metric')"
   );
@@ -46,7 +54,7 @@ export async function getOrCreateUser(db: SQLiteDatabase): Promise<User> {
 export async function updateUser(
   db: SQLiteDatabase,
   userId: number,
-  updates: Partial<Pick<User, 'name' | 'email' | 'avatarUri' | 'gender' | 'dateOfBirth' | 'heightCm' | 'unitSystem'>>
+  updates: Partial<Pick<User, 'name' | 'email' | 'avatarUri' | 'gender' | 'dateOfBirth' | 'heightCm' | 'unitSystem'> & { phone?: string; termsAccepted?: boolean; fitnessGoal?: string }>
 ): Promise<void> {
   const fields: string[] = [];
   const values: any[] = [];
@@ -58,6 +66,9 @@ export async function updateUser(
   if (updates.dateOfBirth !== undefined) { fields.push('date_of_birth = ?'); values.push(updates.dateOfBirth); }
   if (updates.heightCm !== undefined) { fields.push('height_cm = ?'); values.push(updates.heightCm); }
   if (updates.unitSystem !== undefined) { fields.push('unit_system = ?'); values.push(updates.unitSystem); }
+  if (updates.phone !== undefined) { fields.push('phone = ?'); values.push(updates.phone); }
+  if (updates.termsAccepted !== undefined) { fields.push('terms_accepted = ?'); values.push(updates.termsAccepted ? 1 : 0); fields.push("terms_accepted_at = datetime('now')"); }
+  if (updates.fitnessGoal !== undefined) { fields.push('fitness_goal = ?'); values.push(updates.fitnessGoal); }
 
   if (fields.length === 0) return;
 

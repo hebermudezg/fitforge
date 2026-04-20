@@ -242,11 +242,71 @@ export const WEEKLY_PLAN: WorkoutDay[] = [
   },
 ];
 
-export function getTodayWorkout(): WorkoutDay {
-  const dayIndex = new Date().getDay(); // 0=Sun, 1=Mon...
-  // Map: Sun=6, Mon=0, Tue=1, Wed=2, Thu=3, Fri=4, Sat=5
+// Lose Fat routine — Full body + cardio
+const LOSE_FAT_PLAN: WorkoutDay[] = [
+  { dayKey: 'monday', label: { en: 'Full Body A', es: 'Cuerpo Completo A' }, muscleGroup: 'fullBody', icon: 'body-outline',
+    exercises: [EXERCISES.legs[0], EXERCISES.chest[0], EXERCISES.back[1], EXERCISES.shoulders[1], EXERCISES.core[0]] },
+  { dayKey: 'tuesday', label: { en: 'Cardio + Core', es: 'Cardio + Core' }, muscleGroup: 'cardio', icon: 'bicycle-outline',
+    exercises: [...EXERCISES.core] },
+  { dayKey: 'wednesday', label: { en: 'Full Body B', es: 'Cuerpo Completo B' }, muscleGroup: 'fullBody', icon: 'body-outline',
+    exercises: [EXERCISES.legs[1], EXERCISES.chest[1], EXERCISES.back[2], EXERCISES.biceps[0], EXERCISES.triceps[0]] },
+  { dayKey: 'thursday', label: { en: 'Cardio + Core', es: 'Cardio + Core' }, muscleGroup: 'cardio', icon: 'bicycle-outline',
+    exercises: [...EXERCISES.core] },
+  { dayKey: 'friday', label: { en: 'Full Body C', es: 'Cuerpo Completo C' }, muscleGroup: 'fullBody', icon: 'body-outline',
+    exercises: [EXERCISES.legs[3], EXERCISES.chest[2], EXERCISES.back[0], EXERCISES.shoulders[0], EXERCISES.core[2]] },
+  { dayKey: 'saturday', label: { en: 'Active Recovery', es: 'Recuperacion Activa' }, muscleGroup: 'cardio', icon: 'walk-outline', exercises: [] },
+  { dayKey: 'sunday', label: { en: 'Rest Day', es: 'Dia de Descanso' }, muscleGroup: 'rest', icon: 'bed-outline', exercises: [] },
+];
+
+// Upper/Lower for recomp
+const RECOMP_PLAN: WorkoutDay[] = [
+  { dayKey: 'monday', label: { en: 'Upper Body', es: 'Tren Superior' }, muscleGroup: 'upper', icon: 'barbell-outline',
+    exercises: [...EXERCISES.chest.slice(0, 2), ...EXERCISES.back.slice(1), ...EXERCISES.shoulders.slice(0, 2), EXERCISES.biceps[0], EXERCISES.triceps[0]] },
+  { dayKey: 'tuesday', label: { en: 'Lower Body', es: 'Tren Inferior' }, muscleGroup: 'lower', icon: 'walk-outline',
+    exercises: [...EXERCISES.legs, ...EXERCISES.core.slice(0, 1)] },
+  { dayKey: 'wednesday', label: { en: 'Rest', es: 'Descanso' }, muscleGroup: 'rest', icon: 'bed-outline', exercises: [] },
+  { dayKey: 'thursday', label: { en: 'Upper Body', es: 'Tren Superior' }, muscleGroup: 'upper', icon: 'barbell-outline',
+    exercises: [EXERCISES.chest[0], EXERCISES.chest[2], ...EXERCISES.back.slice(0, 2), EXERCISES.shoulders[2], EXERCISES.biceps[1], EXERCISES.triceps[1]] },
+  { dayKey: 'friday', label: { en: 'Lower Body + Core', es: 'Tren Inferior + Core' }, muscleGroup: 'lower', icon: 'walk-outline',
+    exercises: [...EXERCISES.legs.slice(0, 4), ...EXERCISES.core] },
+  { dayKey: 'saturday', label: { en: 'Active Recovery', es: 'Recuperacion Activa' }, muscleGroup: 'cardio', icon: 'walk-outline', exercises: [] },
+  { dayKey: 'sunday', label: { en: 'Rest Day', es: 'Dia de Descanso' }, muscleGroup: 'rest', icon: 'bed-outline', exercises: [] },
+];
+
+// Maintain — Full body 3x/week
+const MAINTAIN_PLAN: WorkoutDay[] = [
+  { dayKey: 'monday', label: { en: 'Full Body', es: 'Cuerpo Completo' }, muscleGroup: 'fullBody', icon: 'body-outline',
+    exercises: [EXERCISES.legs[0], EXERCISES.chest[0], EXERCISES.back[1], EXERCISES.shoulders[0], EXERCISES.biceps[0], EXERCISES.core[0]] },
+  { dayKey: 'tuesday', label: { en: 'Rest / Cardio', es: 'Descanso / Cardio' }, muscleGroup: 'rest', icon: 'bed-outline', exercises: [] },
+  { dayKey: 'wednesday', label: { en: 'Full Body', es: 'Cuerpo Completo' }, muscleGroup: 'fullBody', icon: 'body-outline',
+    exercises: [EXERCISES.legs[1], EXERCISES.chest[1], EXERCISES.back[2], EXERCISES.shoulders[1], EXERCISES.triceps[0], EXERCISES.core[1]] },
+  { dayKey: 'thursday', label: { en: 'Rest / Cardio', es: 'Descanso / Cardio' }, muscleGroup: 'rest', icon: 'bed-outline', exercises: [] },
+  { dayKey: 'friday', label: { en: 'Full Body', es: 'Cuerpo Completo' }, muscleGroup: 'fullBody', icon: 'body-outline',
+    exercises: [EXERCISES.legs[3], EXERCISES.chest[2], EXERCISES.back[0], EXERCISES.shoulders[2], EXERCISES.biceps[1], EXERCISES.core[2]] },
+  { dayKey: 'saturday', label: { en: 'Active Recovery', es: 'Recuperacion Activa' }, muscleGroup: 'cardio', icon: 'walk-outline', exercises: [] },
+  { dayKey: 'sunday', label: { en: 'Rest Day', es: 'Dia de Descanso' }, muscleGroup: 'rest', icon: 'bed-outline', exercises: [] },
+];
+
+const ROUTINES: Record<string, WorkoutDay[]> = {
+  build: WEEKLY_PLAN,      // PPL 6 days
+  lose: LOSE_FAT_PLAN,     // Full body 3x + cardio 2x
+  recomp: RECOMP_PLAN,     // Upper/Lower 4x
+  maintain: MAINTAIN_PLAN, // Full body 3x
+};
+
+export function getRoutineForGoal(goal: string): WorkoutDay[] {
+  return ROUTINES[goal] || WEEKLY_PLAN;
+}
+
+export function getTodayWorkout(goal?: string): WorkoutDay {
+  const plan = goal ? getRoutineForGoal(goal) : WEEKLY_PLAN;
+  const dayIndex = new Date().getDay();
   const planIndex = dayIndex === 0 ? 6 : dayIndex - 1;
-  return WEEKLY_PLAN[planIndex];
+  return plan[planIndex];
+}
+
+export function getWeeklyPlan(goal?: string): WorkoutDay[] {
+  return goal ? getRoutineForGoal(goal) : WEEKLY_PLAN;
 }
 
 export function getExercisesByMuscle(): Record<string, Exercise[]> {

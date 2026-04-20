@@ -14,6 +14,10 @@ const MIGRATIONS = [
       ALTER TABLE users ADD COLUMN fitness_goal TEXT DEFAULT NULL;
     `,
   },
+  {
+    version: 3,
+    up: `ALTER TABLE users ADD COLUMN phone TEXT DEFAULT NULL;`,
+  },
 ];
 
 export async function runMigrations(db: SQLiteDatabase): Promise<void> {
