@@ -65,13 +65,30 @@ export default function WorkoutScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
-  const handleToggleSet = async (set: WorkoutSet) => {
-    if (set.completed) {
-      await uncompleteSet(db, set.id);
-    } else {
-      await completeSet(db, set.id);
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  // Toggle ALL sets of an exercise at once
+  const handleToggleExercise = async (exerciseId: string) => {
+    const exSets = sets.filter((s) => s.exerciseId === exerciseId);
+    const allDone = exSets.every((s) => s.completed);
+    for (const set of exSets) {
+      if (allDone) {
+        await uncompleteSet(db, set.id);
+      } else {
+        if (!set.completed) await completeSet(db, set.id);
+      }
     }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    if (sessionId) {
+      const s = await getSessionSets(db, sessionId);
+      setSets(s);
+    }
+  };
+
+  // Mark ALL exercises as done
+  const handleCompleteAll = async () => {
+    for (const set of sets) {
+      if (!set.completed) await completeSet(db, set.id);
+    }
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     if (sessionId) {
       const s = await getSessionSets(db, sessionId);
       setSets(s);
@@ -109,7 +126,13 @@ export default function WorkoutScreen() {
 
   const totalSets = sets.length;
   const completedSets = sets.filter((s) => s.completed).length;
-  const progress = totalSets > 0 ? (completedSets / totalSets) * 100 : 0;
+  // Count completed exercises (all sets done = 1 exercise done)
+  const totalExercises = todayWorkout.exercises.length;
+  const completedExercises = todayWorkout.exercises.filter((ex) => {
+    const exSets = exerciseSets[ex.id] || [];
+    return exSets.length > 0 && exSets.every((s) => s.completed);
+  }).length;
+  const progress = totalExercises > 0 ? (completedExercises / totalExercises) * 100 : 0;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -152,7 +175,7 @@ export default function WorkoutScreen() {
           <View style={styles.progressSection}>
             <View style={styles.progressHeader}>
               <Text style={[styles.progressText, { color: colors.textPrimary }]}>
-                {completedSets}/{totalSets} {lang === 'es' ? 'series' : 'sets'}
+                {completedExercises}/{totalExercises} {t.workout.exercises}
               </Text>
               <Text style={[styles.progressPercent, { color: colors.accent }]}>
                 {Math.round(progress)}%
@@ -199,12 +222,22 @@ export default function WorkoutScreen() {
               return (
                 <View key={ex.id} style={[styles.exerciseCard, { backgroundColor: colors.surface, borderColor: allDone ? colors.success + '50' : colors.border }]}>
                   <Pressable style={styles.exerciseHeader} onPress={() => setExpandedExercise(isExpanded ? null : ex.id)}>
-                    <View style={[styles.exerciseNum, { backgroundColor: allDone ? colors.success : colors.accent }]}>
-                      {allDone
-                        ? <Ionicons name="checkmark" size={14} color="#0D0D0D" />
-                        : <Text style={styles.exerciseNumText}>{i + 1}</Text>
-                      }
-                    </View>
+                    {/* Tap checkbox to mark exercise done */}
+                    {isWorkoutActive ? (
+                      <Pressable
+                        onPress={(e) => { e.stopPropagation(); handleToggleExercise(ex.id); }}
+                        style={[styles.exerciseNum, { backgroundColor: allDone ? colors.success : colors.surfaceLight }]}
+                      >
+                        {allDone
+                          ? <Ionicons name="checkmark" size={16} color="#fff" />
+                          : <Text style={[styles.exerciseNumText, { color: allDone ? '#fff' : colors.textMuted }]}>{i + 1}</Text>
+                        }
+                      </Pressable>
+                    ) : (
+                      <View style={[styles.exerciseNum, { backgroundColor: colors.accent }]}>
+                        <Text style={styles.exerciseNumText}>{i + 1}</Text>
+                      </View>
+                    )}
                     <View style={styles.exerciseInfo}>
                       <Text style={[styles.exerciseName, { color: colors.textPrimary }]}>
                         {ex.name[lang]}
@@ -236,41 +269,6 @@ export default function WorkoutScreen() {
                         <Text style={[styles.detailText, { color: colors.textSecondary }]}>{ex.tips[lang]}</Text>
                       </View>
 
-                      {/* Interactive sets when workout active */}
-                      {isWorkoutActive && exSets.length > 0 && (
-                        <View style={styles.setsSection}>
-                          <Text style={[styles.setsTitle, { color: colors.textMuted }]}>
-                            {lang === 'es' ? 'SERIES' : 'SETS'}
-                          </Text>
-                          {exSets.map((set) => (
-                            <Pressable
-                              key={set.id}
-                              style={[
-                                styles.setRow,
-                                { borderBottomColor: colors.border },
-                                set.completed && { backgroundColor: colors.success + '10' },
-                              ]}
-                              onPress={() => handleToggleSet(set)}
-                            >
-                              <Ionicons
-                                name={set.completed ? 'checkmark-circle' : 'ellipse-outline'}
-                                size={24}
-                                color={set.completed ? colors.success : colors.textMuted}
-                              />
-                              <Text style={[styles.setLabel, { color: colors.textPrimary }]}>
-                                {lang === 'es' ? 'Serie' : 'Set'} {set.setNumber}
-                              </Text>
-                              <Text style={[styles.setReps, { color: colors.textSecondary }]}>
-                                {ex.reps} {t.workout.reps}
-                              </Text>
-                              {set.completed && (
-                                <Ionicons name="checkmark" size={16} color={colors.success} />
-                              )}
-                            </Pressable>
-                          ))}
-                        </View>
-                      )}
-
                       {/* Muscles */}
                       <View style={styles.muscleChips}>
                         {ex.muscles.map((m) => (
@@ -285,14 +283,24 @@ export default function WorkoutScreen() {
               );
             })}
 
-            {/* Finish button when active */}
+            {/* Complete All + Finish buttons */}
             {isWorkoutActive && (
-              <Pressable onPress={handleFinishWorkout} style={[styles.finishBtn, { borderColor: colors.success }]}>
-                <Ionicons name="checkmark-done" size={22} color={colors.success} />
-                <Text style={[styles.finishBtnText, { color: colors.success }]}>
-                  {lang === 'es' ? 'Terminar Entrenamiento' : 'Finish Workout'}
-                </Text>
-              </Pressable>
+              <View style={styles.actionButtons}>
+                {completedSets < totalSets && (
+                  <Pressable onPress={handleCompleteAll} style={[styles.completeAllBtn, { backgroundColor: colors.accent }]}>
+                    <Ionicons name="checkmark-done" size={20} color="#0D0D0D" />
+                    <Text style={styles.completeAllText}>
+                      {lang === 'es' ? 'Marcar Todo Completo' : 'Mark All Complete'}
+                    </Text>
+                  </Pressable>
+                )}
+                <Pressable onPress={handleFinishWorkout} style={[styles.finishBtn, { borderColor: colors.success }]}>
+                  <Ionicons name="flag" size={20} color={colors.success} />
+                  <Text style={[styles.finishBtnText, { color: colors.success }]}>
+                    {lang === 'es' ? 'Terminar Entrenamiento' : 'Finish Workout'}
+                  </Text>
+                </Pressable>
+              </View>
             )}
 
             {/* Science note */}
@@ -382,7 +390,14 @@ const styles = StyleSheet.create({
   muscleChip: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, borderWidth: 1 },
   muscleChipText: { ...Typography.caption, fontWeight: '600' },
 
-  // Finish
+  // Action buttons
+  actionButtons: { gap: Layout.spacing.sm, marginTop: Layout.spacing.lg },
+  completeAllBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 8, paddingVertical: 14, borderRadius: 14,
+  },
+  completeAllText: { ...Typography.body, color: '#0D0D0D', fontWeight: '700' },
+
   finishBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     gap: 8, paddingVertical: 16, borderRadius: 14, borderWidth: 2, marginTop: Layout.spacing.lg,
