@@ -131,6 +131,26 @@ const DEMO_USERS: DemoUser[] = [
 ];
 
 export async function seedDatabase(db: SQLiteDatabase): Promise<void> {
+  // Ensure password column exists (in case migrations didn't add it)
+  try { await db.execAsync('ALTER TABLE users ADD COLUMN password TEXT DEFAULT NULL'); } catch {}
+  try { await db.execAsync('ALTER TABLE users ADD COLUMN terms_accepted INTEGER NOT NULL DEFAULT 0'); } catch {}
+  try { await db.execAsync('ALTER TABLE users ADD COLUMN fitness_goal TEXT DEFAULT NULL'); } catch {}
+  try { await db.execAsync('ALTER TABLE users ADD COLUMN phone TEXT DEFAULT NULL'); } catch {}
+  try { await db.execAsync('ALTER TABLE users ADD COLUMN terms_accepted_at TEXT DEFAULT NULL'); } catch {}
+
+  // Always ensure demo users have passwords (fixes broken seeds)
+  const usersWithoutPass = await db.getFirstAsync<{ c: number }>(
+    "SELECT COUNT(*) as c FROM users WHERE email LIKE '%fitforge.com' AND (password IS NULL OR password = '')"
+  );
+  if (usersWithoutPass && usersWithoutPass.c > 0) {
+    for (const demo of DEMO_USERS) {
+      await db.runAsync(
+        'UPDATE users SET password = ?, terms_accepted = 1, fitness_goal = ? WHERE email = ?',
+        [demo.password, demo.fitness_goal, demo.email]
+      );
+    }
+  }
+
   const seeded = await db.getFirstAsync<{ value: string }>(
     "SELECT value FROM app_meta WHERE key = 'seeded'"
   );
