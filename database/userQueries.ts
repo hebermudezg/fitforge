@@ -86,11 +86,31 @@ export async function loginUser(
   email: string,
   password: string
 ): Promise<User | null> {
-  const row = await db.getFirstAsync<UserRow>(
+  // First try exact match
+  const row = await db.getFirstAsync<UserRow & { password?: string }>(
     'SELECT * FROM users WHERE email = ? AND password = ?',
     [email, password]
   );
-  return row ? rowToUser(row) : null;
+  if (row) return rowToUser(row);
+
+  // Debug: check if user exists without password check
+  const userExists = await db.getFirstAsync<{ id: number; email: string; password: string | null }>(
+    'SELECT id, email, password FROM users WHERE email = ?',
+    [email]
+  );
+  if (userExists) {
+    console.log('User found but password mismatch:', {
+      email, providedPass: password, storedPass: userExists.password,
+    });
+  } else {
+    // List all users for debug
+    const allUsers = await db.getAllAsync<{ id: number; email: string; password: string | null }>(
+      'SELECT id, email, password FROM users'
+    );
+    console.log('No user with that email. All users:', allUsers);
+  }
+
+  return null;
 }
 
 export async function getUserById(

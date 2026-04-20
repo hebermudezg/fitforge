@@ -8,6 +8,11 @@ export const CREATE_TABLES = `
     date_of_birth TEXT DEFAULT NULL,
     height_cm     REAL DEFAULT NULL,
     unit_system   TEXT NOT NULL DEFAULT 'metric' CHECK(unit_system IN ('metric','imperial')),
+    terms_accepted INTEGER NOT NULL DEFAULT 0,
+    terms_accepted_at TEXT DEFAULT NULL,
+    fitness_goal  TEXT DEFAULT NULL,
+    phone         TEXT DEFAULT NULL,
+    password      TEXT DEFAULT NULL,
     created_at    TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at    TEXT NOT NULL DEFAULT (datetime('now'))
   );
