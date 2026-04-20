@@ -12,7 +12,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useI18n } from '@/i18n';
 import { Typography } from '@/constants/Typography';
 import { Layout } from '@/constants/Layout';
-import { BODY_PARTS, MUSCLE_KEYS, GENERAL_METRIC_KEYS, type BodyPartKey, type MuscleKey } from '@/types/bodyParts';
+import { BODY_PARTS, MUSCLE_PARTS, MUSCLE_KEYS, GENERAL_METRIC_KEYS, type BodyPartKey, type MuscleKey } from '@/types/bodyParts';
 import { convertValue, getDisplayUnit } from '@/utils/conversions';
 import { getRelativeDate } from '@/utils/formatting';
 
@@ -54,6 +54,17 @@ export default function MeasureScreen() {
       router.push(`/measurement/${key}` as any);
     } else {
       setSelectedPart(key);
+      // Auto-flip body to show the correct side for this muscle
+      const muscleDef = MUSCLE_PARTS[key as MuscleKey];
+      if (muscleDef) {
+        const muscleSide = muscleDef.side;
+        if (muscleSide === 'back') {
+          setSideIndex(1); // flip to back
+        } else if (muscleSide === 'front') {
+          setSideIndex(0); // flip to front
+        }
+        // 'both' = don't change current view
+      }
     }
   };
 
