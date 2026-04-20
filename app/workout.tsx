@@ -316,7 +316,15 @@ export default function WorkoutScreen() {
                       {/* GIF */}
                       {getExerciseGif(ex.id) && (
                         <View style={[styles.gifContainer, { backgroundColor: colors.surfaceLight }]}>
-                          <Image source={{ uri: getExerciseGif(ex.id)! }} style={styles.exerciseGif} resizeMode="contain" />
+                          <Image
+                            source={{ uri: getExerciseGif(ex.id)! }}
+                            style={styles.exerciseGif}
+                            resizeMode="contain"
+                            onError={() => {}} // Silently handle load errors
+                          />
+                          <Text style={[styles.gifLabel, { color: colors.textMuted }]}>
+                            {ex.name[lang]}
+                          </Text>
                         </View>
                       )}
 
@@ -433,6 +441,7 @@ const styles = StyleSheet.create({
   exerciseDetails: { padding: 14, paddingTop: 10, borderTopWidth: 1, gap: 10 },
   gifContainer: { borderRadius: 10, overflow: 'hidden', alignItems: 'center', marginBottom: 4 },
   exerciseGif: { width: '100%', height: 200, borderRadius: 10 },
+  gifLabel: { ...Typography.caption, textAlign: 'center', paddingVertical: 4 },
   detailRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-start' },
   detailText: { ...Typography.bodySmall, flex: 1, lineHeight: 20 },
 
