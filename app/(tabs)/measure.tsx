@@ -12,22 +12,31 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useI18n } from '@/i18n';
 import { Typography } from '@/constants/Typography';
 import { Layout } from '@/constants/Layout';
-import { BODY_PARTS, BODY_PART_KEYS, type BodyPartKey } from '@/types/bodyParts';
+import { BODY_PARTS, MUSCLE_KEYS, GENERAL_METRIC_KEYS, type BodyPartKey, type MuscleKey } from '@/types/bodyParts';
 import { convertValue, getDisplayUnit } from '@/utils/conversions';
 import { getRelativeDate } from '@/utils/formatting';
 
-const MUSCLE_ICONS: Record<BodyPartKey, string> = {
+const MUSCLE_ICONS: Partial<Record<BodyPartKey, string>> = {
   neck: 'body-outline',
-  shoulders: 'fitness-outline',
+  trapezius: 'fitness-outline',
+  deltoids: 'fitness-outline',
   chest: 'shirt-outline',
   biceps: 'barbell-outline',
+  triceps: 'barbell-outline',
   forearms: 'hand-left-outline',
-  waist: 'resize-outline',
-  hips: 'body-outline',
-  thighs: 'walk-outline',
+  abs: 'grid-outline',
+  obliques: 'swap-horizontal-outline',
+  upperBack: 'arrow-up-outline',
+  lowerBack: 'arrow-down-outline',
+  gluteal: 'body-outline',
+  quadriceps: 'walk-outline',
+  hamstring: 'walk-outline',
+  adductors: 'walk-outline',
   calves: 'footsteps-outline',
   weight: 'scale-outline',
   bodyFat: 'analytics-outline',
+  waist: 'resize-outline',
+  hips: 'ellipse-outline',
 };
 
 export default function MeasureScreen() {
@@ -120,10 +129,11 @@ export default function MeasureScreen() {
         </View>
       )}
 
-      {/* Muscle group chips with icons and values */}
+      {/* Muscle chips (body-mapped) + general metrics */}
       <View style={[styles.chipsContainer, { borderTopColor: colors.border, backgroundColor: colors.surface }]}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsScroll}>
-          {BODY_PART_KEYS.map((key) => {
+          {/* Muscles that highlight on body */}
+          {MUSCLE_KEYS.map((key) => {
             const partDef = BODY_PARTS[key];
             const measurement = latestMeasurements[key];
             const displayVal = measurement ? convertValue(measurement.value, partDef.unit, user.unitSystem) : null;
@@ -148,6 +158,44 @@ export default function MeasureScreen() {
                 />
                 <View>
                   <Text style={[styles.chipLabel, { color: isSelected ? '#0D0D0D' : colors.textPrimary }]}>
+                    {label}
+                  </Text>
+                  {displayVal !== null && (
+                    <Text style={[styles.chipValue, { color: isSelected ? '#0D0D0D80' : colors.textMuted }]}>
+                      {displayVal.toFixed(1)} {displayUnit}
+                    </Text>
+                  )}
+                </View>
+              </Pressable>
+            );
+          })}
+          {/* Separator */}
+          <View style={[styles.chipSep, { backgroundColor: colors.border }]} />
+          {/* General metrics (not on body) */}
+          {GENERAL_METRIC_KEYS.map((key) => {
+            const partDef = BODY_PARTS[key];
+            const measurement = latestMeasurements[key];
+            const displayVal = measurement ? convertValue(measurement.value, partDef.unit, user.unitSystem) : null;
+            const displayUnit = getDisplayUnit(partDef.unit, user.unitSystem);
+            const label = (t.bodyParts as any)[key] || partDef.label;
+            const isSelected = selectedPart === key;
+
+            return (
+              <Pressable
+                key={key}
+                style={[
+                  styles.chip,
+                  { backgroundColor: colors.surfaceLight, borderColor: colors.border, borderStyle: 'dashed' },
+                  isSelected && { backgroundColor: colors.accent, borderColor: colors.accent, borderStyle: 'solid' },
+                ]}
+                onPress={() => {
+                  setSelectedPart(key);
+                  router.push(`/measurement/${key}` as any);
+                }}
+              >
+                <Ionicons name="clipboard-outline" size={14} color={isSelected ? '#0D0D0D' : colors.textMuted} />
+                <View>
+                  <Text style={[styles.chipLabel, { color: isSelected ? '#0D0D0D' : colors.textSecondary }]}>
                     {label}
                   </Text>
                   {displayVal !== null && (
@@ -194,6 +242,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12, paddingVertical: 8,
     borderRadius: Layout.chipBorderRadius, borderWidth: 1,
   },
+  chipSep: { width: 1, height: 30, alignSelf: 'center' },
   chipLabel: { ...Typography.caption, fontWeight: '600' },
   chipValue: { ...Typography.caption, fontSize: 10, marginTop: 1 },
 });

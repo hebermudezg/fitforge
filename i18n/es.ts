@@ -40,17 +40,28 @@ export default {
   },
 
   bodyParts: {
+    // Musculos (interactivos en el modelo)
     neck: 'Cuello',
-    shoulders: 'Hombros',
-    chest: 'Pecho',
+    trapezius: 'Trapecio',
+    deltoids: 'Deltoides (Hombros)',
+    chest: 'Pecho (Pectorales)',
     biceps: 'Biceps',
+    triceps: 'Triceps',
     forearms: 'Antebrazos',
-    waist: 'Cintura',
-    hips: 'Caderas',
-    thighs: 'Muslos',
+    abs: 'Abdominales (Six Pack)',
+    obliques: 'Oblicuos (Laterales)',
+    upperBack: 'Espalda Alta',
+    lowerBack: 'Espalda Baja (Lumbar)',
+    gluteal: 'Gluteos',
+    quadriceps: 'Cuadriceps',
+    hamstring: 'Isquiotibiales',
+    adductors: 'Aductores (Muslo Interno)',
     calves: 'Pantorrillas',
+    // Metricas generales
     weight: 'Peso',
-    bodyFat: 'Grasa Corporal',
+    bodyFat: 'Grasa Corporal %',
+    waist: 'Circunferencia de Cintura',
+    hips: 'Circunferencia de Caderas',
   },
 
   measurement: {

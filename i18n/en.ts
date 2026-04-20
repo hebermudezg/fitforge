@@ -44,17 +44,28 @@ export default {
 
   // Body parts
   bodyParts: {
+    // Muscles (interactive on body model)
     neck: 'Neck',
-    shoulders: 'Shoulders',
-    chest: 'Chest',
+    trapezius: 'Trapezius',
+    deltoids: 'Deltoids (Shoulders)',
+    chest: 'Chest (Pectorals)',
     biceps: 'Biceps',
+    triceps: 'Triceps',
     forearms: 'Forearms',
-    waist: 'Waist',
-    hips: 'Hips',
-    thighs: 'Thighs',
+    abs: 'Abs (Six Pack)',
+    obliques: 'Obliques (Side Abs)',
+    upperBack: 'Upper Back',
+    lowerBack: 'Lower Back',
+    gluteal: 'Glutes',
+    quadriceps: 'Quadriceps',
+    hamstring: 'Hamstrings',
+    adductors: 'Adductors (Inner Thigh)',
     calves: 'Calves',
+    // General metrics (not on body model)
     weight: 'Weight',
-    bodyFat: 'Body Fat',
+    bodyFat: 'Body Fat %',
+    waist: 'Waist Circumference',
+    hips: 'Hip Circumference',
   },
 
   // Measurement entry

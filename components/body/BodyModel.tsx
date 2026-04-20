@@ -1,8 +1,8 @@
 import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
 import { Dimensions, Platform, StyleSheet, Text, View } from 'react-native';
 import Body, { type ExtendedBodyPart, type Slug } from 'react-native-body-highlighter';
-import type { BodyPartKey } from '@/types/bodyParts';
-import { BODY_PARTS } from '@/types/bodyParts';
+import type { BodyPartKey, MuscleKey } from '@/types/bodyParts';
+import { BODY_PARTS, MUSCLE_PARTS } from '@/types/bodyParts';
 import type { Measurement } from '@/types/models';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useI18n } from '@/i18n';
@@ -11,30 +11,34 @@ import { Layout } from '@/constants/Layout';
 import { convertValue, getDisplayUnit } from '@/utils/conversions';
 import { getRelativeDate } from '@/utils/formatting';
 
-// Map our keys to library slugs
-const BODY_PART_TO_SLUGS: Record<BodyPartKey, Slug[]> = {
-  neck: ['neck'],
-  shoulders: ['deltoids', 'trapezius'],
-  chest: ['chest'],
-  biceps: ['biceps'],
-  forearms: ['forearm'],
-  waist: ['abs', 'obliques'],
-  hips: ['gluteal', 'adductors'],
-  thighs: ['quadriceps', 'hamstring'],
-  calves: ['calves', 'tibialis'],
-  weight: ['feet'],
-  bodyFat: ['head'],
+// 1:1 mapping — each muscle key maps to exactly the right SVG slug
+const MUSCLE_TO_SLUG: Record<MuscleKey, Slug> = {
+  neck: 'neck',
+  trapezius: 'trapezius',
+  deltoids: 'deltoids',
+  chest: 'chest',
+  biceps: 'biceps',
+  triceps: 'triceps',
+  forearms: 'forearm',
+  abs: 'abs',
+  obliques: 'obliques',
+  upperBack: 'upper-back',
+  lowerBack: 'lower-back',
+  gluteal: 'gluteal',
+  quadriceps: 'quadriceps',
+  hamstring: 'hamstring',
+  adductors: 'adductors',
+  calves: 'calves',
 };
 
-const SLUG_TO_BODY_PART: Record<string, BodyPartKey> = {};
-for (const [key, slugs] of Object.entries(BODY_PART_TO_SLUGS)) {
-  for (const slug of slugs) {
-    SLUG_TO_BODY_PART[slug] = key as BodyPartKey;
-  }
+// Reverse: slug → our muscle key
+const SLUG_TO_MUSCLE: Record<string, MuscleKey> = {};
+for (const [key, slug] of Object.entries(MUSCLE_TO_SLUG)) {
+  SLUG_TO_MUSCLE[slug] = key as MuscleKey;
 }
 
-// All valid slugs for click detection
-const ALL_SLUGS = new Set(Object.keys(SLUG_TO_BODY_PART));
+// All interactive slugs
+const ALL_SLUGS = new Set(Object.values(MUSCLE_TO_SLUG));
 
 interface BodyModelProps {
   gender: 'male' | 'female';
@@ -60,30 +64,26 @@ export function BodyModel({
   const containerRef = useRef<View>(null);
   const [hoveredSlug, setHoveredSlug] = useState<string | null>(null);
 
-  const activePart = selectedPart || (hoveredSlug ? SLUG_TO_BODY_PART[hoveredSlug] : null);
+  const activePart = selectedPart || (hoveredSlug ? SLUG_TO_MUSCLE[hoveredSlug] : null) as BodyPartKey | null;
 
   // Build highlight data
   const bodyData: ExtendedBodyPart[] = useMemo(() => {
     const data: ExtendedBodyPart[] = [];
 
-    // Measured parts — light highlight
+    // Measured muscles — light highlight
     for (const [key, measurement] of Object.entries(measurements)) {
-      const slugs = BODY_PART_TO_SLUGS[key as BodyPartKey];
-      if (!slugs || !measurement) continue;
-      for (const slug of slugs) {
-        data.push({ slug, intensity: 1, color: colors.accent + '40' });
-      }
+      const slug = MUSCLE_TO_SLUG[key as MuscleKey];
+      if (!slug || !measurement) continue;
+      data.push({ slug, intensity: 1, color: colors.accent + '40' });
     }
 
-    // Active/selected part — strong highlight
+    // Active/selected muscle — strong highlight
     if (activePart) {
-      const slugs = BODY_PART_TO_SLUGS[activePart];
-      if (slugs) {
-        for (const slug of slugs) {
-          const idx = data.findIndex((d) => d.slug === slug);
-          if (idx >= 0) data.splice(idx, 1);
-          data.push({ slug, intensity: 2, color: colors.accent });
-        }
+      const slug = MUSCLE_TO_SLUG[activePart as MuscleKey];
+      if (slug) {
+        const idx = data.findIndex((d) => d.slug === slug);
+        if (idx >= 0) data.splice(idx, 1);
+        data.push({ slug, intensity: 2, color: colors.accent });
       }
     }
 
@@ -93,7 +93,7 @@ export function BodyModel({
   // Native handler (iOS/Android)
   const handleNativePress = useCallback((part: ExtendedBodyPart) => {
     if (part.slug) {
-      const key = SLUG_TO_BODY_PART[part.slug];
+      const key = SLUG_TO_MUSCLE[part.slug];
       if (key) onBodyPartPress(key);
     }
   }, [onBodyPartPress]);
@@ -112,11 +112,11 @@ export function BodyModel({
 
       paths.forEach((path) => {
         const slug = path.getAttribute('id');
-        if (!slug || !ALL_SLUGS.has(slug)) return;
+        if (!slug || !ALL_SLUGS.has(slug as Slug)) return;
 
         const handler = (e: Event) => {
           e.stopPropagation();
-          const key = SLUG_TO_BODY_PART[slug];
+          const key = SLUG_TO_MUSCLE[slug];
           if (key) {
             setHoveredSlug(slug);
             onBodyPartPress(key);
