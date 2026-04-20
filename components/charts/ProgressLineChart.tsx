@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Line, Path, Text as SvgText } from 'react-native-svg';
-import { Colors } from '@/constants/Colors';
+import { useTheme } from '@/contexts/ThemeContext';
 import { Typography } from '@/constants/Typography';
 
 interface DataPoint {
@@ -24,6 +24,8 @@ export function ProgressLineChart({
   width,
   height = 220,
 }: ProgressLineChartProps) {
+  const { colors } = useTheme();
+
   if (data.length === 0) {
     return (
       <View style={[styles.empty, { width, height }]}>
@@ -87,7 +89,7 @@ export function ProgressLineChart({
             y1={tick.y}
             x2={width - padding.right}
             y2={tick.y}
-            stroke={Colors.border}
+            stroke={colors.border}
             strokeWidth={0.5}
           />
         ))}
@@ -99,7 +101,7 @@ export function ProgressLineChart({
             x={padding.left - 8}
             y={tick.y + 4}
             textAnchor="end"
-            fill={Colors.textMuted}
+            fill={colors.textMuted}
             fontSize={10}
           >
             {tick.value}
@@ -113,7 +115,7 @@ export function ProgressLineChart({
             x={label.x}
             y={height - 8}
             textAnchor="middle"
-            fill={Colors.textMuted}
+            fill={colors.textMuted}
             fontSize={10}
           >
             {label.label}
@@ -128,7 +130,7 @@ export function ProgressLineChart({
               y1={padding.top + chartH - ((goalValue - minVal) / range) * chartH}
               x2={width - padding.right}
               y2={padding.top + chartH - ((goalValue - minVal) / range) * chartH}
-              stroke={Colors.success}
+              stroke={colors.success}
               strokeWidth={1}
               strokeDasharray="6,4"
             />
@@ -136,7 +138,7 @@ export function ProgressLineChart({
               x={width - padding.right}
               y={padding.top + chartH - ((goalValue - minVal) / range) * chartH - 6}
               textAnchor="end"
-              fill={Colors.success}
+              fill={colors.success}
               fontSize={9}
             >
               Goal: {goalValue}
@@ -148,7 +150,7 @@ export function ProgressLineChart({
         <Path
           d={pathD}
           fill="none"
-          stroke={Colors.accent}
+          stroke={colors.accent}
           strokeWidth={2.5}
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -161,8 +163,8 @@ export function ProgressLineChart({
             cx={p.x}
             cy={p.y}
             r={4}
-            fill={Colors.accent}
-            stroke={Colors.background}
+            fill={colors.accent}
+            stroke={colors.background}
             strokeWidth={2}
           />
         ))}
@@ -181,6 +183,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     ...Typography.bodySmall,
-    color: Colors.textMuted,
+    color: '#999',
   },
 });

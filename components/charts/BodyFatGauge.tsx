@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Path, Text as SvgText } from 'react-native-svg';
-import { Colors } from '@/constants/Colors';
+import { useTheme } from '@/contexts/ThemeContext';
 import { Typography } from '@/constants/Typography';
 
 interface BodyFatGaugeProps {
@@ -10,6 +10,7 @@ interface BodyFatGaugeProps {
 }
 
 export function BodyFatGauge({ value, size = 180 }: BodyFatGaugeProps) {
+  const { colors } = useTheme();
   const cx = size / 2;
   const cy = size / 2 + 10;
   const radius = size / 2 - 20;
@@ -40,9 +41,9 @@ export function BodyFatGauge({ value, size = 180 }: BodyFatGaugeProps) {
 
   // Color based on value
   const getColor = () => {
-    if (value < 15) return Colors.success;
-    if (value < 25) return Colors.warning;
-    return Colors.error;
+    if (value < 15) return colors.success;
+    if (value < 25) return colors.warning;
+    return colors.error;
   };
 
   return (
@@ -51,7 +52,7 @@ export function BodyFatGauge({ value, size = 180 }: BodyFatGaugeProps) {
         <Path
           d={bgPath}
           fill="none"
-          stroke={Colors.surfaceLight}
+          stroke={colors.surfaceLight}
           strokeWidth={strokeWidth}
           strokeLinecap="round"
         />
@@ -74,7 +75,7 @@ export function BodyFatGauge({ value, size = 180 }: BodyFatGaugeProps) {
               x={tickX}
               y={tickY}
               textAnchor="middle"
-              fill={Colors.textMuted}
+              fill={colors.textMuted}
               fontSize={9}
             >
               {tick}%
@@ -85,7 +86,7 @@ export function BodyFatGauge({ value, size = 180 }: BodyFatGaugeProps) {
           x={cx}
           y={cy - 10}
           textAnchor="middle"
-          fill={Colors.textPrimary}
+          fill={colors.textPrimary}
           fontSize={28}
           fontWeight="bold"
         >
@@ -95,7 +96,7 @@ export function BodyFatGauge({ value, size = 180 }: BodyFatGaugeProps) {
           x={cx}
           y={cy + 10}
           textAnchor="middle"
-          fill={Colors.textMuted}
+          fill={colors.textMuted}
           fontSize={12}
         >
           % body fat

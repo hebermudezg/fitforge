@@ -15,7 +15,8 @@ import { Card } from '@/components/ui/Card';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { useMeasurements } from '@/contexts/MeasurementContext';
 import { useUser } from '@/contexts/UserContext';
-import { Colors } from '@/constants/Colors';
+import { useTheme } from '@/contexts/ThemeContext';
+import { useI18n } from '@/i18n';
 import { Typography } from '@/constants/Typography';
 import { Layout } from '@/constants/Layout';
 import { BODY_PARTS, BODY_PART_KEYS, type BodyPartKey } from '@/types/bodyParts';
@@ -38,11 +39,13 @@ const SCREEN_WIDTH = Dimensions.get('window').width;
 
 export default function ProgressScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
+  const { t, lang } = useI18n();
   const { user, goals } = useUser();
   const { getHistory, getStats } = useMeasurements();
 
   const [selectedPart, setSelectedPart] = useState<BodyPartKey>('chest');
-  const [timeRangeIndex, setTimeRangeIndex] = useState(1); // 1M default
+  const [timeRangeIndex, setTimeRangeIndex] = useState(1);
   const timeRange = TIME_RANGES[timeRangeIndex];
 
   const [chartData, setChartData] = useState<{ date: string; value: number }[]>([]);
@@ -56,6 +59,7 @@ export default function ProgressScreen() {
   const goalDisplay = goal
     ? convertValue(goal.targetValue, partDef.unit, user.unitSystem)
     : undefined;
+  const partLabel = (t.bodyParts as any)[selectedPart] || partDef.label;
 
   const loadData = useCallback(async () => {
     const fromDate = getFromDate(timeRange);
@@ -76,42 +80,41 @@ export default function ProgressScreen() {
     });
   }, [selectedPart, timeRange, user.unitSystem]);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  useEffect(() => { loadData(); }, [loadData]);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.inner}>
-          <Text style={styles.title}>Progress</Text>
+          <Text style={[styles.title, { color: colors.textPrimary }]}>{t.progress.title}</Text>
 
           {/* Body part selector */}
           <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.partScroll}
-            contentContainerStyle={styles.partScrollContent}
+            horizontal showsHorizontalScrollIndicator={false}
+            style={styles.partScroll} contentContainerStyle={styles.partScrollContent}
           >
-            {BODY_PART_KEYS.map((key) => (
-              <Pressable
-                key={key}
-                style={[
-                  styles.partChip,
-                  selectedPart === key && styles.partChipSelected,
-                ]}
-                onPress={() => setSelectedPart(key)}
-              >
-                <Text
+            {BODY_PART_KEYS.map((key) => {
+              const label = (t.bodyParts as any)[key] || BODY_PARTS[key].label;
+              return (
+                <Pressable
+                  key={key}
                   style={[
-                    styles.partChipText,
-                    selectedPart === key && styles.partChipTextSelected,
+                    styles.partChip,
+                    { backgroundColor: colors.surfaceLight, borderColor: colors.border },
+                    selectedPart === key && { backgroundColor: colors.accent, borderColor: colors.accent },
                   ]}
+                  onPress={() => setSelectedPart(key)}
                 >
-                  {BODY_PARTS[key].label}
-                </Text>
-              </Pressable>
-            ))}
+                  <Text style={[
+                    styles.partChipText,
+                    { color: colors.textSecondary },
+                    selectedPart === key && { color: '#0D0D0D', fontWeight: '600' },
+                  ]}>
+                    {label}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </ScrollView>
 
           {/* Time range */}
@@ -138,41 +141,39 @@ export default function ProgressScreen() {
           {stats && stats.count > 0 && (
             <View style={styles.statsGrid}>
               <Card style={styles.statCard}>
-                <Text style={styles.statLabel}>Min</Text>
-                <Text style={styles.statValue}>{stats.min.toFixed(1)}</Text>
-                <Text style={styles.statUnit}>{displayUnit}</Text>
+                <Text style={[styles.statLabel, { color: colors.textMuted }]}>{t.progress.min}</Text>
+                <Text style={[styles.statValue, { color: colors.textPrimary }]}>{stats.min.toFixed(1)}</Text>
+                <Text style={[styles.statUnit, { color: colors.textSecondary }]}>{displayUnit}</Text>
               </Card>
               <Card style={styles.statCard}>
-                <Text style={styles.statLabel}>Max</Text>
-                <Text style={styles.statValue}>{stats.max.toFixed(1)}</Text>
-                <Text style={styles.statUnit}>{displayUnit}</Text>
+                <Text style={[styles.statLabel, { color: colors.textMuted }]}>{t.progress.max}</Text>
+                <Text style={[styles.statValue, { color: colors.textPrimary }]}>{stats.max.toFixed(1)}</Text>
+                <Text style={[styles.statUnit, { color: colors.textSecondary }]}>{displayUnit}</Text>
               </Card>
               <Card style={styles.statCard}>
-                <Text style={styles.statLabel}>Avg</Text>
-                <Text style={styles.statValue}>{stats.avg.toFixed(1)}</Text>
-                <Text style={styles.statUnit}>{displayUnit}</Text>
+                <Text style={[styles.statLabel, { color: colors.textMuted }]}>{t.progress.avg}</Text>
+                <Text style={[styles.statValue, { color: colors.textPrimary }]}>{stats.avg.toFixed(1)}</Text>
+                <Text style={[styles.statUnit, { color: colors.textSecondary }]}>{displayUnit}</Text>
               </Card>
               <Card style={styles.statCard}>
-                <Text style={styles.statLabel}>Change</Text>
-                <Text
-                  style={[
-                    styles.statValue,
-                    { color: stats.change > 0 ? Colors.success : stats.change < 0 ? Colors.error : Colors.textPrimary },
-                  ]}
-                >
+                <Text style={[styles.statLabel, { color: colors.textMuted }]}>{t.progress.change}</Text>
+                <Text style={[
+                  styles.statValue,
+                  { color: stats.change > 0 ? colors.success : stats.change < 0 ? colors.error : colors.textPrimary },
+                ]}>
                   {stats.change > 0 ? '+' : ''}{stats.change.toFixed(1)}
                 </Text>
-                <Text style={styles.statUnit}>{displayUnit}</Text>
+                <Text style={[styles.statUnit, { color: colors.textSecondary }]}>{displayUnit}</Text>
               </Card>
             </View>
           )}
 
           {/* View full history */}
           <Pressable
-            style={styles.historyBtn}
+            style={[styles.historyBtn, { borderColor: colors.accent }]}
             onPress={() => router.push(`/history/${selectedPart}` as any)}
           >
-            <Text style={styles.historyBtnText}>View Full History</Text>
+            <Text style={[styles.historyBtnText, { color: colors.accent }]}>{t.progress.viewHistory}</Text>
           </Pressable>
         </View>
       </ScrollView>
@@ -181,84 +182,28 @@ export default function ProgressScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  inner: {
-    padding: Layout.screenPadding,
-  },
-  title: {
-    ...Typography.h2,
-    color: Colors.textPrimary,
-    marginBottom: Layout.spacing.md,
-  },
-  partScroll: {
-    marginBottom: Layout.spacing.md,
-  },
-  partScrollContent: {
-    gap: Layout.spacing.sm,
-  },
+  container: { flex: 1 },
+  inner: { padding: Layout.screenPadding },
+  title: { ...Typography.h2, marginBottom: Layout.spacing.md },
+  partScroll: { marginBottom: Layout.spacing.md },
+  partScrollContent: { gap: Layout.spacing.sm },
   partChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: Layout.chipBorderRadius,
-    backgroundColor: Colors.surfaceLight,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    paddingHorizontal: 14, paddingVertical: 6,
+    borderRadius: Layout.chipBorderRadius, borderWidth: 1,
   },
-  partChipSelected: {
-    backgroundColor: Colors.accent,
-    borderColor: Colors.accent,
-  },
-  partChipText: {
-    ...Typography.bodySmall,
-    color: Colors.textSecondary,
-  },
-  partChipTextSelected: {
-    color: Colors.textPrimary,
-    fontWeight: '600',
-  },
-  chartCard: {
-    marginTop: Layout.spacing.md,
-    alignItems: 'center',
-  },
+  partChipText: { ...Typography.bodySmall },
+  chartCard: { marginTop: Layout.spacing.md, alignItems: 'center' },
   statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Layout.spacing.sm,
-    marginTop: Layout.spacing.md,
+    flexDirection: 'row', flexWrap: 'wrap',
+    gap: Layout.spacing.sm, marginTop: Layout.spacing.md,
   },
-  statCard: {
-    flex: 1,
-    minWidth: '45%',
-    alignItems: 'center',
-    paddingVertical: Layout.spacing.md,
-  },
-  statLabel: {
-    ...Typography.caption,
-    color: Colors.textMuted,
-  },
-  statValue: {
-    ...Typography.h2,
-    color: Colors.textPrimary,
-    marginVertical: 2,
-  },
-  statUnit: {
-    ...Typography.caption,
-    color: Colors.textSecondary,
-  },
+  statCard: { flex: 1, minWidth: '45%', alignItems: 'center', paddingVertical: Layout.spacing.md },
+  statLabel: { ...Typography.caption },
+  statValue: { ...Typography.h2, marginVertical: 2 },
+  statUnit: { ...Typography.caption },
   historyBtn: {
-    marginTop: Layout.spacing.lg,
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderRadius: Layout.buttonBorderRadius,
-    borderWidth: 1,
-    borderColor: Colors.accent,
+    marginTop: Layout.spacing.lg, alignItems: 'center',
+    paddingVertical: 12, borderRadius: Layout.buttonBorderRadius, borderWidth: 1,
   },
-  historyBtnText: {
-    ...Typography.body,
-    color: Colors.accent,
-    fontWeight: '600',
-  },
+  historyBtnText: { ...Typography.body, fontWeight: '600' },
 });
