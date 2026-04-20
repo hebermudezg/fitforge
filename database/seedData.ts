@@ -138,17 +138,13 @@ export async function seedDatabase(db: SQLiteDatabase): Promise<void> {
   try { await db.execAsync('ALTER TABLE users ADD COLUMN phone TEXT DEFAULT NULL'); } catch {}
   try { await db.execAsync('ALTER TABLE users ADD COLUMN terms_accepted_at TEXT DEFAULT NULL'); } catch {}
 
-  // Always ensure demo users have passwords (fixes broken seeds)
-  const usersWithoutPass = await db.getFirstAsync<{ c: number }>(
-    "SELECT COUNT(*) as c FROM users WHERE email LIKE '%fitforge.com' AND (password IS NULL OR password = '')"
-  );
-  if (usersWithoutPass && usersWithoutPass.c > 0) {
-    for (const demo of DEMO_USERS) {
-      await db.runAsync(
-        'UPDATE users SET password = ?, terms_accepted = 1, fitness_goal = ? WHERE email = ?',
-        [demo.password, demo.fitness_goal, demo.email]
-      );
-    }
+  // Fix old seeds: match by name and set email+password if missing
+  for (const demo of DEMO_USERS) {
+    await db.runAsync(
+      `UPDATE users SET email = ?, password = ?, terms_accepted = 1, fitness_goal = ?
+       WHERE name = ? AND (email IS NULL OR email = '' OR password IS NULL OR password = '')`,
+      [demo.email, demo.password, demo.fitness_goal, demo.name]
+    );
   }
 
   const seeded = await db.getFirstAsync<{ value: string }>(
