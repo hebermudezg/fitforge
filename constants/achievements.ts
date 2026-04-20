@@ -93,6 +93,36 @@ export const ACHIEVEMENTS: Achievement[] = [
     condition: (s) => s.streakDays >= 90,
   },
 
+  // Workouts
+  {
+    id: 'first_workout',
+    icon: 'barbell',
+    name: { en: 'First Workout', es: 'Primer Entrenamiento' },
+    description: { en: 'Complete your first workout', es: 'Completa tu primer entrenamiento' },
+    condition: (s) => s.totalWorkouts >= 1,
+  },
+  {
+    id: 'workout_5',
+    icon: 'barbell',
+    name: { en: '5 Workouts', es: '5 Entrenamientos' },
+    description: { en: 'Complete 5 workouts', es: 'Completa 5 entrenamientos' },
+    condition: (s) => s.totalWorkouts >= 5,
+  },
+  {
+    id: 'workout_20',
+    icon: 'barbell',
+    name: { en: 'Gym Rat', es: 'Rata de Gym' },
+    description: { en: 'Complete 20 workouts', es: 'Completa 20 entrenamientos' },
+    condition: (s) => s.totalWorkouts >= 20,
+  },
+  {
+    id: 'workout_50',
+    icon: 'diamond',
+    name: { en: 'Iron Addict', es: 'Adicto al Hierro' },
+    description: { en: 'Complete 50 workouts', es: 'Completa 50 entrenamientos' },
+    condition: (s) => s.totalWorkouts >= 50,
+  },
+
   // Progress
   {
     id: 'muscle_growth',

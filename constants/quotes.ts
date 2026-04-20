@@ -31,12 +31,42 @@ export const QUOTES: Quote[] = [
   { text: { en: 'Strength does not come from physical capacity. It comes from an indomitable will.', es: 'La fuerza no viene de la capacidad fisica. Viene de una voluntad indomable.' }, author: 'Mahatma Gandhi' },
 ];
 
-export function getDailyQuote(): Quote {
-  // Same quote all day, changes daily
+// Quotes specifically for women — empowerment, confidence, self-love
+export const FEMALE_QUOTES: Quote[] = [
+  { text: { en: 'She believed she could, so she did.', es: 'Ella creyo que podia, y lo hizo.' }, author: 'R.S. Grey' },
+  { text: { en: 'A strong woman looks a challenge in the eye and gives it a wink.', es: 'Una mujer fuerte mira al desafio a los ojos y le guina.' }, author: 'Gina Carey' },
+  { text: { en: 'The most beautiful thing a woman can wear is confidence.', es: 'Lo mas hermoso que una mujer puede usar es la confianza.' }, author: 'Blake Lively' },
+  { text: { en: 'Strong women dont have attitudes. They have standards.', es: 'Las mujeres fuertes no tienen actitudes. Tienen estandares.' }, author: 'Marilyn Monroe' },
+  { text: { en: 'You are more powerful than you know; you are beautiful just as you are.', es: 'Eres mas poderosa de lo que sabes; eres hermosa tal como eres.' }, author: 'Melissa Etheridge' },
+  { text: { en: 'I am not afraid of storms, for I am learning how to sail my ship.', es: 'No le temo a las tormentas, porque estoy aprendiendo a navegar mi barco.' }, author: 'Louisa May Alcott' },
+  { text: { en: 'The question isnt who is going to let me; its who is going to stop me.', es: 'La pregunta no es quien me va a dejar; es quien me va a detener.' }, author: 'Ayn Rand' },
+  { text: { en: 'Every woman that finally figured out her worth, has picked up her suitcases of pride and boarded a flight to freedom.', es: 'Toda mujer que finalmente descubrio su valor, recogio sus maletas de orgullo y abordo un vuelo a la libertad.' }, author: 'Shannon L. Alder' },
+];
+
+// Quotes specifically for men — discipline, provider mindset, Tate, stoic warriors
+export const MALE_QUOTES: Quote[] = [
+  { text: { en: 'A mans only duty is to provide, protect, and conquer. Everything else is noise.', es: 'El unico deber de un hombre es proveer, proteger y conquistar. Todo lo demas es ruido.' }, author: 'Andrew Tate' },
+  { text: { en: 'Hard times create strong men. Strong men create good times.', es: 'Los tiempos dificiles crean hombres fuertes. Los hombres fuertes crean buenos tiempos.' }, author: 'G. Michael Hopf' },
+  { text: { en: 'Suffer the pain of discipline or suffer the pain of regret.', es: 'Sufre el dolor de la disciplina o sufre el dolor del arrepentimiento.' }, author: 'Andrew Tate' },
+  { text: { en: 'A man who conquers himself is greater than one who conquers a thousand men in battle.', es: 'Un hombre que se conquista a si mismo es mas grande que uno que conquista a mil hombres en batalla.' }, author: 'Buddha' },
+  { text: { en: 'Cost of being a man: nobody cares about your problems, work anyway.', es: 'El costo de ser hombre: a nadie le importan tus problemas, trabaja de todos modos.' }, author: 'Andrew Tate' },
+  { text: { en: 'The iron never lies. 200 pounds is always 200 pounds.', es: 'El hierro nunca miente. 200 libras siempre son 200 libras.' }, author: 'Henry Rollins' },
+  { text: { en: 'Pain is temporary. Quitting lasts forever.', es: 'El dolor es temporal. Rendirse dura para siempre.' }, author: 'Lance Armstrong' },
+  { text: { en: 'You were born to be a warrior. Train like one.', es: 'Naciste para ser un guerrero. Entrena como uno.' }, author: 'David Goggins' },
+];
+
+export function getDailyQuote(gender?: string): Quote {
   const today = new Date();
   const dayOfYear = Math.floor(
     (today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 86400000
   );
+
+  // Mix: 50% general/stoic, 50% gender-specific
+  if (gender && dayOfYear % 2 === 0) {
+    const genderQuotes = gender === 'female' ? FEMALE_QUOTES : MALE_QUOTES;
+    return genderQuotes[Math.floor(dayOfYear / 2) % genderQuotes.length];
+  }
+
   return QUOTES[dayOfYear % QUOTES.length];
 }
 

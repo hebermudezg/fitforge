@@ -18,6 +18,8 @@ import { getRelativeDate } from '@/utils/formatting';
 import { getTodayWorkout, getWeeklyPlan } from '@/constants/exercises';
 import { getDailyQuote, getGreeting } from '@/constants/quotes';
 import { useSubscription } from '@/contexts/SubscriptionContext';
+import { isTodayWorkoutCompleted } from '@/database/workoutQueries';
+import { useDatabase } from '@/contexts/DatabaseContext';
 import { useUserStats } from '@/hooks/useUserStats';
 import { getUnlockedAchievements, getNextAchievements } from '@/constants/achievements';
 
@@ -26,6 +28,7 @@ export default function DashboardScreen() {
   const { colors } = useTheme();
   const { t, lang } = useI18n();
   const { user } = useUser();
+  const db = useDatabase();
   const { latestMeasurements, recentMeasurements } = useMeasurements();
   const { tier, isPro } = useSubscription();
   const userStats = useUserStats();
@@ -33,12 +36,14 @@ export default function DashboardScreen() {
   const nextGoals = getNextAchievements(userStats, 3);
 
   const [fitnessGoal, setFitnessGoal] = useState<string>('build');
+  const [workoutDoneToday, setWorkoutDoneToday] = useState(false);
   useEffect(() => {
     AsyncStorage.getItem('fitness_goal').then((g) => { if (g) setFitnessGoal(g); });
+    isTodayWorkoutCompleted(db, user.id).then(setWorkoutDoneToday);
   }, []);
 
   const greeting = getGreeting(lang);
-  const quote = getDailyQuote();
+  const quote = getDailyQuote(user.gender);
   const todayWorkout = getTodayWorkout(fitnessGoal, user.gender);
   const weeklyPlan = getWeeklyPlan(fitnessGoal, user.gender);
   const isRestDay = todayWorkout.muscleGroup === 'rest';
@@ -75,23 +80,35 @@ export default function DashboardScreen() {
 
         {/* Today's Workout - compact */}
         <Pressable
-          style={[styles.workoutBanner, { backgroundColor: colors.surface, borderColor: colors.border }]}
+          style={[styles.workoutBanner, {
+            backgroundColor: workoutDoneToday ? colors.success + '10' : colors.surface,
+            borderColor: workoutDoneToday ? colors.success + '50' : colors.border,
+          }]}
           onPress={() => router.push('/workout' as any)}
         >
-          <View style={[styles.workoutIconBg, { backgroundColor: colors.accent + '20' }]}>
-            <Ionicons name={isRestDay ? 'bed-outline' : todayWorkout.icon as any} size={24} color={colors.accent} />
+          <View style={[styles.workoutIconBg, { backgroundColor: workoutDoneToday ? colors.success + '20' : colors.accent + '20' }]}>
+            <Ionicons
+              name={workoutDoneToday ? 'checkmark-circle' : isRestDay ? 'bed-outline' : todayWorkout.icon as any}
+              size={24}
+              color={workoutDoneToday ? colors.success : colors.accent}
+            />
           </View>
           <View style={styles.workoutInfo}>
-            <Text style={[styles.workoutTitle, { color: colors.textPrimary }]}>
-              {isRestDay ? t.dashboard.restDay : todayWorkout.label[lang]}
+            <Text style={[styles.workoutTitle, { color: workoutDoneToday ? colors.success : colors.textPrimary }]}>
+              {workoutDoneToday
+                ? (lang === 'es' ? 'Entrenamiento Completado' : 'Workout Completed')
+                : isRestDay ? t.dashboard.restDay : todayWorkout.label[lang]}
             </Text>
             <Text style={[styles.workoutSub, { color: colors.textMuted }]}>
-              {isRestDay
-                ? t.dashboard.restDayDesc
-                : `${todayWorkout.exercises.length} ${t.dashboard.exercises}`}
+              {workoutDoneToday
+                ? (lang === 'es' ? 'Buen trabajo! Racha +1' : 'Great job! Streak +1')
+                : isRestDay
+                  ? t.dashboard.restDayDesc
+                  : `${todayWorkout.exercises.length} ${t.dashboard.exercises}`}
             </Text>
           </View>
-          {!isRestDay && <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />}
+          {!isRestDay && !workoutDoneToday && <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />}
+          {workoutDoneToday && <Ionicons name="checkmark" size={20} color={colors.success} />}
         </Pressable>
 
         {/* Weekly Plan Strip */}

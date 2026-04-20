@@ -19,6 +19,7 @@ import {
   completeSet, uncompleteSet, completeWorkoutSession,
   type WorkoutSet,
 } from '@/database/workoutQueries';
+import { getDailyQuote } from '@/constants/quotes';
 
 export default function WorkoutScreen() {
   const router = useRouter();
@@ -32,6 +33,8 @@ export default function WorkoutScreen() {
   const [sessionId, setSessionId] = useState<number | null>(null);
   const [sets, setSets] = useState<WorkoutSet[]>([]);
   const [isWorkoutActive, setIsWorkoutActive] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [workoutDuration, setWorkoutDuration] = useState(0);
 
   useEffect(() => {
     AsyncStorage.getItem('fitness_goal').then((g) => { if (g) setFitnessGoal(g); });
@@ -110,11 +113,16 @@ export default function WorkoutScreen() {
     if (sessionId) {
       await completeWorkoutSession(db, sessionId);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      // Calculate duration
+      const session = await getActiveSession(db, user.id);
+      if (session) {
+        const start = new Date(session.startedAt).getTime();
+        const mins = Math.round((Date.now() - start) / 60000);
+        setWorkoutDuration(mins);
+      }
     }
+    setShowCelebration(true);
     setIsWorkoutActive(false);
-    setSessionId(null);
-    setSets([]);
-    router.back();
   };
 
   // Group sets by exercise
@@ -153,6 +161,59 @@ export default function WorkoutScreen() {
         )}
         {!isWorkoutActive && <View style={{ width: 60 }} />}
       </View>
+
+      {/* CELEBRATION SCREEN */}
+      {showCelebration && (
+        <View style={[styles.celebrationContainer, { backgroundColor: colors.background }]}>
+          <View style={[styles.celebrationIcon, { backgroundColor: colors.success + '20' }]}>
+            <Ionicons name="checkmark-circle" size={80} color={colors.success} />
+          </View>
+          <Text style={[styles.celebrationTitle, { color: colors.textPrimary }]}>
+            {lang === 'es' ? 'Entrenamiento Completado!' : 'Workout Complete!'}
+          </Text>
+          <Text style={[styles.celebrationQuote, { color: colors.textSecondary }]}>
+            "{getDailyQuote().text[lang]}"
+          </Text>
+          <Text style={[styles.celebrationAuthor, { color: colors.accent }]}>
+            — {getDailyQuote().author}
+          </Text>
+
+          <View style={styles.celebrationStats}>
+            <View style={[styles.celebrationStat, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Ionicons name="barbell-outline" size={22} color={colors.accent} />
+              <Text style={[styles.celebrationStatValue, { color: colors.textPrimary }]}>{completedExercises}</Text>
+              <Text style={[styles.celebrationStatLabel, { color: colors.textMuted }]}>
+                {t.workout.exercises}
+              </Text>
+            </View>
+            <View style={[styles.celebrationStat, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Ionicons name="time-outline" size={22} color={colors.accent} />
+              <Text style={[styles.celebrationStatValue, { color: colors.textPrimary }]}>{workoutDuration}</Text>
+              <Text style={[styles.celebrationStatLabel, { color: colors.textMuted }]}>min</Text>
+            </View>
+            <View style={[styles.celebrationStat, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Ionicons name="flame-outline" size={22} color={colors.accent} />
+              <Text style={[styles.celebrationStatValue, { color: colors.textPrimary }]}>+1</Text>
+              <Text style={[styles.celebrationStatLabel, { color: colors.textMuted }]}>
+                {lang === 'es' ? 'racha' : 'streak'}
+              </Text>
+            </View>
+          </View>
+
+          <Pressable onPress={() => router.back()} style={styles.celebrationBtn}>
+            <LinearGradient
+              colors={[colors.gradientPrimary[0], colors.gradientPrimary[1]] as [string, string]}
+              start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+              style={styles.celebrationBtnGradient}
+            >
+              <Ionicons name="home" size={20} color="#0D0D0D" />
+              <Text style={styles.celebrationBtnText}>
+                {lang === 'es' ? 'Volver al Inicio' : 'Back to Home'}
+              </Text>
+            </LinearGradient>
+          </Pressable>
+        </View>
+      )}
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         {/* Workout info */}
@@ -403,6 +464,28 @@ const styles = StyleSheet.create({
     gap: 8, paddingVertical: 16, borderRadius: 14, borderWidth: 2, marginTop: Layout.spacing.lg,
   },
   finishBtnText: { ...Typography.h3, fontWeight: '800' },
+
+  // Celebration
+  celebrationContainer: {
+    flex: 1, alignItems: 'center', justifyContent: 'center',
+    padding: Layout.screenPadding, position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10,
+  },
+  celebrationIcon: { width: 120, height: 120, borderRadius: 60, alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
+  celebrationTitle: { ...Typography.h1, marginBottom: Layout.spacing.md },
+  celebrationQuote: { ...Typography.body, fontStyle: 'italic', textAlign: 'center', lineHeight: 24, paddingHorizontal: 20 },
+  celebrationAuthor: { ...Typography.bodySmall, fontWeight: '700', marginTop: 8, marginBottom: Layout.spacing.xl },
+  celebrationStats: { flexDirection: 'row', gap: Layout.spacing.md, marginBottom: Layout.spacing.xl },
+  celebrationStat: {
+    alignItems: 'center', padding: 16, borderRadius: 14, borderWidth: 1, minWidth: 90, gap: 4,
+  },
+  celebrationStatValue: { ...Typography.h2, fontWeight: '800' },
+  celebrationStatLabel: { ...Typography.caption },
+  celebrationBtn: { borderRadius: 14, overflow: 'hidden', width: '100%' },
+  celebrationBtnGradient: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 10, paddingVertical: 16,
+  },
+  celebrationBtnText: { ...Typography.body, color: '#0D0D0D', fontWeight: '800' },
 
   // Science
   scienceNote: {

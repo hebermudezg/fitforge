@@ -131,6 +131,19 @@ export async function getRecentSessions(
   }));
 }
 
+export async function isTodayWorkoutCompleted(
+  db: SQLiteDatabase,
+  userId: number
+): Promise<boolean> {
+  const today = new Date().toISOString().split('T')[0];
+  const row = await db.getFirstAsync<{ c: number }>(
+    `SELECT COUNT(*) as c FROM workout_sessions
+     WHERE user_id = ? AND completed_at IS NOT NULL AND DATE(completed_at) = ?`,
+    [userId, today]
+  );
+  return (row?.c || 0) > 0;
+}
+
 export async function getActiveSession(
   db: SQLiteDatabase,
   userId: number

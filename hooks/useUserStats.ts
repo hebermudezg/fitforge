@@ -28,11 +28,22 @@ export function useUserStats(): UserStats {
         'SELECT COUNT(DISTINCT body_part) as c FROM measurements WHERE user_id = ?', [user.id]
       );
 
-      // Streak: consecutive days with measurements
-      const dates = await db.getAllAsync<{ d: string }>(
-        `SELECT DISTINCT DATE(measured_at) as d FROM measurements
-         WHERE user_id = ? ORDER BY d DESC`, [user.id]
+      // Total completed workouts
+      const workoutsRow = await db.getFirstAsync<{ c: number }>(
+        'SELECT COUNT(*) as c FROM workout_sessions WHERE user_id = ? AND completed_at IS NOT NULL',
+        [user.id]
       );
+
+      // Streak: consecutive days with measurements OR completed workouts
+      const dates = await db.getAllAsync<{ d: string }>(
+        `SELECT DISTINCT d FROM (
+          SELECT DATE(measured_at) as d FROM measurements WHERE user_id = ?
+          UNION
+          SELECT DATE(completed_at) as d FROM workout_sessions WHERE user_id = ? AND completed_at IS NOT NULL
+        ) ORDER BY d DESC`,
+        [user.id, user.id]
+      );
+
       let streak = 0;
       if (dates.length > 0) {
         const today = new Date();
@@ -43,20 +54,23 @@ export function useUserStats(): UserStats {
           const dateStr = expected.toISOString().split('T')[0];
           if (dates[i].d === dateStr) {
             streak++;
-          } else if (i === 0 && dates[0].d === new Date(today.getTime() - 86400000).toISOString().split('T')[0]) {
+          } else if (i === 0) {
             // Allow starting from yesterday
-            streak++;
-            continue;
+            const yesterday = new Date(today.getTime() - 86400000).toISOString().split('T')[0];
+            if (dates[0].d === yesterday) {
+              streak++;
+              continue;
+            }
+            break;
           } else {
             break;
           }
         }
       }
 
-      // Days active (unique dates with any measurement)
       const activeDays = dates.length;
 
-      // Weight change (first vs last)
+      // Weight change
       const firstWeight = await db.getFirstAsync<{ value: number }>(
         `SELECT value FROM measurements WHERE user_id = ? AND body_part = 'weight'
          ORDER BY measured_at ASC LIMIT 1`, [user.id]
@@ -68,7 +82,7 @@ export function useUserStats(): UserStats {
       const weightChange = (firstWeight && lastWeight)
         ? lastWeight.value - firstWeight.value : 0;
 
-      // Max muscle growth (biggest gain in any muscle)
+      // Max muscle growth
       const growthRows = await db.getAllAsync<{ body_part: string; first_val: number; last_val: number }>(
         `SELECT m1.body_part,
            (SELECT value FROM measurements m2 WHERE m2.user_id = m1.user_id AND m2.body_part = m1.body_part ORDER BY measured_at ASC LIMIT 1) as first_val,
@@ -82,16 +96,11 @@ export function useUserStats(): UserStats {
         return growth > max ? growth : max;
       }, 0);
 
-      // Completed events as workouts
-      const workoutRow = await db.getFirstAsync<{ c: number }>(
-        `SELECT COUNT(*) as c FROM events WHERE user_id = ? AND is_completed = 1`, [user.id]
-      );
-
       setStats({
         totalMeasurements: countRow?.c || 0,
         musclesMeasured: musclesRow?.c || 0,
         streakDays: streak,
-        totalWorkouts: workoutRow?.c || 0,
+        totalWorkouts: workoutsRow?.c || 0,
         daysActive: activeDays,
         weightChange: Math.round(weightChange * 10) / 10,
         maxMuscleGrowth: Math.round(maxGrowth * 10) / 10,
