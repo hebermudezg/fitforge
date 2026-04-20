@@ -11,6 +11,7 @@ import { I18nProvider } from '@/i18n';
 import { DatabaseProvider } from '@/contexts/DatabaseContext';
 import { UserProvider } from '@/contexts/UserContext';
 import { MeasurementProvider } from '@/contexts/MeasurementContext';
+import { SubscriptionProvider } from '@/contexts/SubscriptionContext';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -80,6 +81,7 @@ function RootLayoutNav() {
       <DatabaseProvider>
         <UserProvider>
           <MeasurementProvider>
+            <SubscriptionProvider>
             <Stack>
               <Stack.Screen name="onboarding" options={{ headerShown: false }} />
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -107,7 +109,12 @@ function RootLayoutNav() {
                   title: 'Event',
                 }}
               />
+              <Stack.Screen
+                name="paywall"
+                options={{ presentation: 'modal', headerShown: false }}
+              />
             </Stack>
+            </SubscriptionProvider>
           </MeasurementProvider>
         </UserProvider>
       </DatabaseProvider>

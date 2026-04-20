@@ -1,17 +1,17 @@
-import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { Dimensions, Platform, StyleSheet, Text, View } from 'react-native';
 import Body, { type ExtendedBodyPart, type Slug } from 'react-native-body-highlighter';
 import type { BodyPartKey, MuscleKey } from '@/types/bodyParts';
-import { BODY_PARTS, MUSCLE_PARTS } from '@/types/bodyParts';
+import { BODY_PARTS } from '@/types/bodyParts';
 import type { Measurement } from '@/types/models';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useI18n } from '@/i18n';
 import { Typography } from '@/constants/Typography';
-import { Layout } from '@/constants/Layout';
 import { convertValue, getDisplayUnit } from '@/utils/conversions';
 import { getRelativeDate } from '@/utils/formatting';
+import { MUSCLE_RANGES, getMuscleIntensity } from '@/constants/muscleRanges';
 
-// 1:1 mapping — each muscle key maps to exactly the right SVG slug
+// 1:1 mapping muscle → SVG slug
 const MUSCLE_TO_SLUG: Record<MuscleKey, Slug> = {
   neck: 'neck',
   trapezius: 'trapezius',
@@ -31,13 +31,11 @@ const MUSCLE_TO_SLUG: Record<MuscleKey, Slug> = {
   calves: 'calves',
 };
 
-// Reverse: slug → our muscle key
 const SLUG_TO_MUSCLE: Record<string, MuscleKey> = {};
 for (const [key, slug] of Object.entries(MUSCLE_TO_SLUG)) {
   SLUG_TO_MUSCLE[slug] = key as MuscleKey;
 }
 
-// All interactive slugs
 const ALL_SLUGS = new Set(Object.values(MUSCLE_TO_SLUG));
 
 interface BodyModelProps {
@@ -51,6 +49,20 @@ interface BodyModelProps {
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
+/**
+ * Calculate scale factor for a muscle based on measurement vs. average range
+ * Returns 0.92 (below average) to 1.15 (very muscular)
+ */
+function getMuscleScale(muscle: MuscleKey, value: number, gender: 'male' | 'female'): number {
+  const range = MUSCLE_RANGES[muscle];
+  if (!range) return 1.0;
+  const [low, avg, high] = range[gender];
+  // Normalize: 0 = low, 0.5 = avg, 1.0 = high
+  const normalized = Math.max(0, Math.min(1, (value - low) / (high - low)));
+  // Scale: 0.92 at low, 1.0 at avg, 1.15 at high
+  return 0.92 + normalized * 0.23;
+}
+
 export function BodyModel({
   gender,
   side = 'front',
@@ -61,36 +73,40 @@ export function BodyModel({
 }: BodyModelProps) {
   const { colors, isDark } = useTheme();
   const { t, lang } = useI18n();
-  const containerRef = useRef<View>(null);
   const [hoveredSlug, setHoveredSlug] = useState<string | null>(null);
 
   const activePart = selectedPart || (hoveredSlug ? SLUG_TO_MUSCLE[hoveredSlug] : null) as BodyPartKey | null;
 
-  // Build highlight data
+  // Build highlight data with intensity-based colors
   const bodyData: ExtendedBodyPart[] = useMemo(() => {
     const data: ExtendedBodyPart[] = [];
 
-    // Measured muscles — light highlight
-    for (const [key, measurement] of Object.entries(measurements)) {
-      const slug = MUSCLE_TO_SLUG[key as MuscleKey];
-      if (!slug || !measurement) continue;
-      data.push({ slug, intensity: 1, color: colors.accent + '40' });
+    for (const [key, slug] of Object.entries(MUSCLE_TO_SLUG)) {
+      const m = measurements[key as BodyPartKey];
+      if (!m) continue;
+      const intensity = getMuscleIntensity(key as MuscleKey, m.value, gender);
+      // Color intensity: 1=light, 2=medium, 3=strong
+      const alphas = ['30', '60', '90'];
+      data.push({
+        slug,
+        intensity,
+        color: colors.accent + (alphas[intensity - 1] || '60'),
+      });
     }
 
-    // Active/selected muscle — strong highlight
+    // Selected part — full accent
     if (activePart) {
       const slug = MUSCLE_TO_SLUG[activePart as MuscleKey];
       if (slug) {
         const idx = data.findIndex((d) => d.slug === slug);
         if (idx >= 0) data.splice(idx, 1);
-        data.push({ slug, intensity: 2, color: colors.accent });
+        data.push({ slug, intensity: 3, color: colors.accent });
       }
     }
 
     return data;
-  }, [measurements, activePart, colors.accent]);
+  }, [measurements, activePart, colors.accent, gender]);
 
-  // Native handler (iOS/Android)
   const handleNativePress = useCallback((part: ExtendedBodyPart) => {
     if (part.slug) {
       const key = SLUG_TO_MUSCLE[part.slug];
@@ -98,54 +114,69 @@ export function BodyModel({
     }
   }, [onBodyPartPress]);
 
-  // Web click handler — inject DOM listeners since onPress doesn't work on web SVG
+  // Web: inject click handlers + SCALE TRANSFORMS based on measurements
   useEffect(() => {
     if (Platform.OS !== 'web') return;
 
     const timer = setTimeout(() => {
-      // Find all SVG path elements within our container
       const container = document.querySelector('[data-body-model]');
       if (!container) return;
 
-      const paths = container.querySelectorAll('path[id]');
-      const handlers: Array<{ el: Element; handler: (e: Event) => void }> = [];
+      const svgEl = container.querySelector('svg');
+      if (!svgEl) return;
+
+      const paths = svgEl.querySelectorAll('path[id]');
+      const cleanups: (() => void)[] = [];
 
       paths.forEach((path) => {
         const slug = path.getAttribute('id');
         if (!slug || !ALL_SLUGS.has(slug as Slug)) return;
 
-        const handler = (e: Event) => {
+        const muscleKey = SLUG_TO_MUSCLE[slug];
+
+        // === SHAPE CHANGE: Scale muscle paths based on measurements ===
+        const m = measurements[muscleKey];
+        if (m && muscleKey) {
+          const scale = getMuscleScale(muscleKey, m.value, gender);
+          // Get path bounding box for transform-origin
+          const bbox = (path as SVGPathElement).getBBox();
+          const cx = bbox.x + bbox.width / 2;
+          const cy = bbox.y + bbox.height / 2;
+          (path as HTMLElement).style.transformOrigin = `${cx}px ${cy}px`;
+          (path as HTMLElement).style.transform = `scale(${scale})`;
+          (path as HTMLElement).style.transition = 'transform 0.5s ease';
+        }
+
+        // Click handler
+        const clickHandler = (e: Event) => {
           e.stopPropagation();
-          const key = SLUG_TO_MUSCLE[slug];
-          if (key) {
+          if (muscleKey) {
             setHoveredSlug(slug);
-            onBodyPartPress(key);
+            onBodyPartPress(muscleKey);
           }
         };
+        const enterHandler = () => setHoveredSlug(slug);
+        const leaveHandler = () => setHoveredSlug(null);
 
-        path.addEventListener('click', handler);
-        // Add hover effect
-        path.addEventListener('mouseenter', () => setHoveredSlug(slug));
-        path.addEventListener('mouseleave', () => setHoveredSlug(null));
-
-        // Make paths look clickable
+        path.addEventListener('click', clickHandler);
+        path.addEventListener('mouseenter', enterHandler);
+        path.addEventListener('mouseleave', leaveHandler);
         (path as HTMLElement).style.cursor = 'pointer';
-        (path as HTMLElement).style.transition = 'opacity 0.2s';
 
-        handlers.push({ el: path, handler });
+        cleanups.push(() => {
+          path.removeEventListener('click', clickHandler);
+          path.removeEventListener('mouseenter', enterHandler);
+          path.removeEventListener('mouseleave', leaveHandler);
+        });
       });
 
-      return () => {
-        handlers.forEach(({ el, handler }) => {
-          el.removeEventListener('click', handler);
-        });
-      };
-    }, 500); // Wait for SVG to render
+      return () => cleanups.forEach((fn) => fn());
+    }, 600);
 
     return () => clearTimeout(timer);
-  }, [onBodyPartPress, side, gender]);
+  }, [onBodyPartPress, side, gender, measurements]);
 
-  // Tooltip info for active part
+  // Tooltip
   const activePartDef = activePart ? BODY_PARTS[activePart] : null;
   const activeMeasurement = activePart ? measurements[activePart] : null;
   const activeDisplayValue = activeMeasurement && activePartDef
@@ -154,12 +185,24 @@ export function BodyModel({
   const activeDisplayUnit = activePartDef ? getDisplayUnit(activePartDef.unit, unitSystem) : '';
   const activeLabel = activePart ? ((t.bodyParts as any)[activePart] || activePartDef?.label) : null;
 
+  // Intensity label
+  const activeIntensity = activePart && activeMeasurement
+    ? getMuscleIntensity(activePart as MuscleKey, activeMeasurement.value, gender)
+    : 0;
+  const intensityLabels: Record<string, Record<number, string>> = {
+    en: { 1: 'Beginner', 2: 'Intermediate', 3: 'Advanced' },
+    es: { 1: 'Principiante', 2: 'Intermedio', 3: 'Avanzado' },
+  };
+
   const scale = Math.min(SCREEN_WIDTH * 0.0026, 1.4);
 
   return (
     <View style={styles.container}>
-      {/* Muscle info tooltip */}
-      <View style={[styles.tooltip, { backgroundColor: colors.surface, borderColor: activePart ? colors.accent : colors.border }]}>
+      {/* Tooltip */}
+      <View style={[styles.tooltip, {
+        backgroundColor: colors.surface,
+        borderColor: activePart ? colors.accent : colors.border,
+      }]}>
         {activePart && activeLabel ? (
           <>
             <View style={styles.tooltipRow}>
@@ -167,24 +210,29 @@ export function BodyModel({
               <Text style={[styles.tooltipName, { color: colors.textPrimary }]}>{activeLabel}</Text>
             </View>
             {activeDisplayValue !== null ? (
-              <View style={styles.tooltipRow}>
+              <>
                 <Text style={[styles.tooltipValue, { color: colors.accent }]}>
                   {activeDisplayValue.toFixed(1)} {activeDisplayUnit}
                 </Text>
-                {activeMeasurement && (
-                  <Text style={[styles.tooltipDate, { color: colors.textMuted }]}>
-                    · {getRelativeDate(activeMeasurement.measuredAt)}
-                  </Text>
+                {activeIntensity > 0 && (
+                  <View style={[styles.levelBadge, {
+                    backgroundColor: activeIntensity === 3 ? colors.success + '20' :
+                      activeIntensity === 2 ? colors.warning + '20' : colors.textMuted + '20',
+                  }]}>
+                    <Text style={[styles.levelText, {
+                      color: activeIntensity === 3 ? colors.success :
+                        activeIntensity === 2 ? colors.warning : colors.textMuted,
+                    }]}>
+                      {intensityLabels[lang]?.[activeIntensity]}
+                    </Text>
+                  </View>
                 )}
-              </View>
+              </>
             ) : (
               <Text style={[styles.tooltipHint, { color: colors.textMuted }]}>
-                {lang === 'es' ? 'Sin medida registrada' : 'No measurement recorded'}
+                {lang === 'es' ? 'Toca para medir' : 'Tap to measure'}
               </Text>
             )}
-            <Text style={[styles.tooltipAction, { color: colors.accent }]}>
-              {lang === 'es' ? 'Toca de nuevo para medir' : 'Tap again to measure'}
-            </Text>
           </>
         ) : (
           <Text style={[styles.tooltipHint, { color: colors.textMuted }]}>
@@ -195,9 +243,8 @@ export function BodyModel({
 
       {/* Body SVG */}
       <View
-        ref={containerRef}
         style={styles.bodyWrap}
-        // @ts-ignore — web-only attribute for DOM query
+        // @ts-ignore
         dataSet={{ bodyModel: 'true' }}
       >
         <Body
@@ -208,13 +255,14 @@ export function BodyModel({
           onBodyPartPress={handleNativePress}
           colors={[
             isDark ? '#1E1E1E' : '#E0E0E0',
-            colors.accent + '50',
+            colors.accent + '40',
+            colors.accent + '70',
             colors.accent,
           ]}
-          border={isDark ? '#444' : '#BBB'}
-          defaultFill={isDark ? '#1E1E1E' : '#EAEAEA'}
+          border={isDark ? '#555' : '#BBB'}
+          defaultFill={isDark ? '#1A1A1A' : '#EAEAEA'}
           defaultStroke={isDark ? '#444' : '#CCC'}
-          defaultStrokeWidth={0.6}
+          defaultStrokeWidth={0.5}
         />
       </View>
     </View>
@@ -222,49 +270,17 @@ export function BodyModel({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  container: { alignItems: 'center', justifyContent: 'center' },
   tooltip: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    marginBottom: 8,
-    minWidth: 220,
-    alignItems: 'center',
-    gap: 4,
+    paddingHorizontal: 16, paddingVertical: 10, borderRadius: 14,
+    borderWidth: 1.5, marginBottom: 6, minWidth: 200, alignItems: 'center', gap: 4,
   },
-  tooltipRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  tooltipDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  tooltipName: {
-    ...Typography.h3,
-  },
-  tooltipValue: {
-    ...Typography.body,
-    fontWeight: '700',
-  },
-  tooltipDate: {
-    ...Typography.caption,
-  },
-  tooltipHint: {
-    ...Typography.bodySmall,
-  },
-  tooltipAction: {
-    ...Typography.caption,
-    fontWeight: '600',
-    marginTop: 2,
-  },
-  bodyWrap: {
-    alignItems: 'center',
-  },
+  tooltipRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  tooltipDot: { width: 10, height: 10, borderRadius: 5 },
+  tooltipName: { ...Typography.h3 },
+  tooltipValue: { ...Typography.h2, fontWeight: '700' },
+  tooltipHint: { ...Typography.bodySmall },
+  levelBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 10 },
+  levelText: { ...Typography.caption, fontWeight: '700' },
+  bodyWrap: { alignItems: 'center' },
 });

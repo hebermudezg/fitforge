@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Card } from '@/components/ui/Card';
 import { useMeasurements } from '@/contexts/MeasurementContext';
 import { useUser } from '@/contexts/UserContext';
@@ -16,6 +17,7 @@ import { convertValue, getDisplayUnit } from '@/utils/conversions';
 import { getRelativeDate } from '@/utils/formatting';
 import { getTodayWorkout, getWeeklyPlan } from '@/constants/exercises';
 import { getDailyQuote, getGreeting } from '@/constants/quotes';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 
 export default function DashboardScreen() {
   const router = useRouter();
@@ -23,6 +25,7 @@ export default function DashboardScreen() {
   const { t, lang } = useI18n();
   const { user } = useUser();
   const { latestMeasurements, recentMeasurements } = useMeasurements();
+  const { tier, isPro } = useSubscription();
 
   const [fitnessGoal, setFitnessGoal] = useState<string>('build');
   useEffect(() => {
@@ -205,6 +208,32 @@ export default function DashboardScreen() {
           </Pressable>
         </View>
 
+        {/* Upgrade banner (only for free users) */}
+        {!isPro && (
+          <Pressable
+            style={[styles.upgradeBanner, { borderColor: colors.accent }]}
+            onPress={() => router.push('/paywall' as any)}
+          >
+            <LinearGradient
+              colors={[colors.accent + '15', colors.accent + '05'] as [string, string]}
+              style={styles.upgradeGradient}
+            >
+              <Ionicons name="diamond" size={24} color={colors.accent} />
+              <View style={styles.upgradeInfo}>
+                <Text style={[styles.upgradeTitle, { color: colors.accent }]}>
+                  {lang === 'es' ? 'Desbloquea FitForge Pro' : 'Unlock FitForge Pro'}
+                </Text>
+                <Text style={[styles.upgradeDesc, { color: colors.textSecondary }]}>
+                  {lang === 'es'
+                    ? 'Todas las medidas, rutinas y graficas avanzadas'
+                    : 'All measurements, routines & advanced charts'}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.accent} />
+            </LinearGradient>
+          </Pressable>
+        )}
+
         {/* Footer disclaimer */}
         <Text style={[styles.disclaimer, { color: colors.textMuted }]}>{t.disclaimer}</Text>
       </ScrollView>
@@ -283,6 +312,14 @@ const styles = StyleSheet.create({
   },
   actionBtnText: { ...Typography.body, color: '#0D0D0D', fontWeight: '700' },
   actionBtnTextAlt: { ...Typography.body, fontWeight: '700' },
+
+  upgradeBanner: { borderRadius: 14, borderWidth: 1, overflow: 'hidden', marginTop: Layout.spacing.lg },
+  upgradeGradient: {
+    flexDirection: 'row', alignItems: 'center', padding: 16, gap: 12,
+  },
+  upgradeInfo: { flex: 1 },
+  upgradeTitle: { ...Typography.body, fontWeight: '700' },
+  upgradeDesc: { ...Typography.caption, marginTop: 2 },
 
   disclaimer: { ...Typography.caption, textAlign: 'center', marginTop: Layout.spacing.xl, lineHeight: 18 },
 });
