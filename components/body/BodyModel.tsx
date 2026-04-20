@@ -97,37 +97,39 @@ export function BodyModel({
     return base * muscleFactor;
   }, [overallMuscularity]);
 
-  // Build highlight data — strokeWidth varies by muscle size
+  // Build highlight data
+  // Measured muscles = GREEN (has data), Selected = YELLOW (active choice)
   const bodyData: ExtendedBodyPart[] = useMemo(() => {
     const data: ExtendedBodyPart[] = [];
 
     for (const [key, slug] of Object.entries(MUSCLE_TO_SLUG)) {
+      const isSelected = activePart === key;
       const m = measurements[key as BodyPartKey];
-      if (!m) continue;
-      const intensity = getMuscleIntensity(key as MuscleKey, (m as any).value, gender);
-      // Color: beginner=subtle, intermediate=medium, advanced=vivid
-      const colorMap = [colors.accent + '25', colors.accent + '55', colors.accent + 'CC'];
-      // StrokeWidth: bigger muscles = thicker outline = looks bigger
-      const strokeMap = [0.5, 1.2, 2.5];
-      data.push({
-        slug,
-        intensity,
-        color: colorMap[intensity - 1],
-        styles: {
-          strokeWidth: strokeMap[intensity - 1],
-          stroke: intensity === 3 ? colors.accent : isDark ? '#555' : '#BBB',
-        },
-      });
-    }
 
-    // Selected part — full accent
-    if (activePart) {
-      const slug = MUSCLE_TO_SLUG[activePart as MuscleKey];
-      if (slug) {
-        const idx = data.findIndex((d) => d.slug === slug);
-        if (idx >= 0) data.splice(idx, 1);
-        data.push({ slug, intensity: 3, color: colors.accent });
+      if (isSelected) {
+        // SELECTED = bright yellow, thick border — clearly stands out
+        data.push({
+          slug,
+          intensity: 3,
+          color: colors.accent,
+          styles: { strokeWidth: 3, stroke: colors.accent },
+        });
+      } else if (m) {
+        // HAS MEASUREMENT = green tones — shows it has data
+        const intensity = getMuscleIntensity(key as MuscleKey, (m as any).value, gender);
+        const greenColors = ['#22C55E30', '#22C55E60', '#22C55E90'];
+        const strokeWidths = [0.5, 1.0, 1.8];
+        data.push({
+          slug,
+          intensity,
+          color: greenColors[intensity - 1],
+          styles: {
+            strokeWidth: strokeWidths[intensity - 1],
+            stroke: intensity === 3 ? '#22C55E' : isDark ? '#444' : '#BBB',
+          },
+        });
       }
+      // No measurement + not selected = default gray (handled by library)
     }
 
     return data;
