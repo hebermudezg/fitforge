@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
@@ -265,23 +265,21 @@ export default function ProfileScreen() {
         {/* Logout */}
         <Pressable
           style={[styles.logoutBtn, { borderColor: Colors.error }]}
-          onPress={() => {
-            Alert.alert(
-              lang === 'es' ? 'Cerrar Sesion' : 'Log Out',
-              lang === 'es' ? 'Seguro que quieres cerrar sesion?' : 'Are you sure you want to log out?',
-              [
-                { text: t.common.cancel, style: 'cancel' },
-                {
-                  text: lang === 'es' ? 'Cerrar Sesion' : 'Log Out',
-                  style: 'destructive',
-                  onPress: async () => {
-                    await AsyncStorage.removeItem('user_session');
-                    await AsyncStorage.removeItem('onboarding_complete');
-                    router.replace('/login');
-                  },
-                },
-              ]
-            );
+          onPress={async () => {
+            const msg = lang === 'es' ? 'Seguro que quieres cerrar sesion?' : 'Are you sure you want to log out?';
+            const confirmed = Platform.OS === 'web' ? window.confirm(msg) : await new Promise<boolean>((resolve) => {
+              Alert.alert(
+                lang === 'es' ? 'Cerrar Sesion' : 'Log Out', msg,
+                [{ text: t.common.cancel, onPress: () => resolve(false) },
+                 { text: 'OK', style: 'destructive', onPress: () => resolve(true) }]
+              );
+            });
+            if (confirmed) {
+              await AsyncStorage.removeItem('user_session');
+              await AsyncStorage.removeItem('onboarding_complete');
+              await AsyncStorage.removeItem('active_user_id');
+              router.replace('/login');
+            }
           }}
         >
           <Ionicons name="log-out-outline" size={20} color={Colors.error} />
