@@ -81,7 +81,8 @@ function RootLayoutNav({ authState }: { authState: 'login' | 'onboarding' | 'app
                 <Stack.Screen name="login" />
                 <Stack.Screen name="onboarding" />
                 <Stack.Screen name="(tabs)" />
-                <Stack.Screen name="measurement/[bodyPart]" options={{ presentation: 'modal' }} />
+                <Stack.Screen name="workout" />
+              <Stack.Screen name="measurement/[bodyPart]" options={{ presentation: 'modal' }} />
                 <Stack.Screen
                   name="history/[bodyPart]"
                   options={{

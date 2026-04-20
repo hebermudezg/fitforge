@@ -76,7 +76,7 @@ export default function DashboardScreen() {
         {/* Today's Workout - compact */}
         <Pressable
           style={[styles.workoutBanner, { backgroundColor: colors.surface, borderColor: colors.border }]}
-          onPress={() => {/* TODO: navigate to workout detail */}}
+          onPress={() => router.push('/workout' as any)}
         >
           <View style={[styles.workoutIconBg, { backgroundColor: colors.accent + '20' }]}>
             <Ionicons name={isRestDay ? 'bed-outline' : todayWorkout.icon as any} size={24} color={colors.accent} />
