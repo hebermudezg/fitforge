@@ -13,29 +13,40 @@ interface DatabaseContextType {
 
 const DatabaseContext = createContext<DatabaseContextType | null>(null);
 
-// Keep reference to close on unmount/re-init
-let currentDb: SQLiteDatabase | null = null;
+async function clearWebDatabase(): Promise<void> {
+  if (Platform.OS !== 'web') return;
+  try {
+    const root = await navigator.storage.getDirectory();
+    // Try to remove the OPFS directory used by expo-sqlite
+    for await (const [name] of (root as any).entries()) {
+      if (name.includes('sqlite') || name.includes('fitforge')) {
+        await root.removeEntry(name, { recursive: true });
+      }
+    }
+  } catch {}
+}
 
-async function initDatabase(retries = 3): Promise<SQLiteDatabase> {
-  // Close existing connection first (fixes web AccessHandle conflict)
-  if (currentDb) {
-    try { await currentDb.closeAsync(); } catch {}
-    currentDb = null;
-  }
+async function initDatabase(): Promise<SQLiteDatabase> {
+  const maxRetries = 3;
 
-  for (let attempt = 1; attempt <= retries; attempt++) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       const database = await SQLite.openDatabaseAsync('fitforge.db');
       await database.execAsync('PRAGMA journal_mode = WAL;');
       await runMigrations(database);
       try { await seedDatabase(database); } catch {}
-      currentDb = database;
       return database;
     } catch (e: any) {
-      console.warn(`DB init attempt ${attempt}/${retries}:`, e.message);
-      if (attempt === retries) throw e;
-      // Wait before retry (web needs time to release file handle)
-      await new Promise((r) => setTimeout(r, 500 * attempt));
+      console.warn(`DB attempt ${attempt}:`, e.message);
+      if (attempt < maxRetries) {
+        // On web, clear the locked handle and retry
+        if (Platform.OS === 'web') {
+          await clearWebDatabase();
+        }
+        await new Promise((r) => setTimeout(r, 800 * attempt));
+      } else {
+        throw e;
+      }
     }
   }
   throw new Error('Failed to init database');
@@ -45,36 +56,34 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
   const [db, setDb] = useState<SQLiteDatabase | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const tryInit = () => {
+  const tryInit = async () => {
     setError(null);
     setDb(null);
-    initDatabase()
-      .then(setDb)
-      .catch((e) => setError(e.message));
+    try {
+      const database = await initDatabase();
+      setDb(database);
+    } catch (e: any) {
+      setError(e.message);
+    }
   };
 
-  useEffect(() => {
-    tryInit();
-    return () => {
-      // Cleanup on unmount
-      if (currentDb) {
-        currentDb.closeAsync().catch(() => {});
-        currentDb = null;
-      }
-    };
-  }, []);
+  useEffect(() => { tryInit(); }, []);
 
   if (error) {
     return (
       <View style={styles.loading}>
-        <Text style={styles.errorText}>DB Error: {error}</Text>
+        <Text style={styles.errorTitle}>Database Error</Text>
+        <Text style={styles.errorText}>{error}</Text>
         <Pressable style={styles.retryBtn} onPress={tryInit}>
           <Text style={styles.retryText}>Retry</Text>
         </Pressable>
         {Platform.OS === 'web' && (
-          <Text style={styles.hintText}>
-            Close other FitForge tabs and try again
-          </Text>
+          <Pressable style={styles.clearBtn} onPress={async () => {
+            await clearWebDatabase();
+            window.location.reload();
+          }}>
+            <Text style={styles.clearText}>Clear DB & Reload</Text>
+          </Pressable>
         )}
       </View>
     );
@@ -84,6 +93,7 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
     return (
       <View style={styles.loading}>
         <ActivityIndicator size="large" color={Colors.accent} />
+        <Text style={styles.loadingText}>Loading...</Text>
       </View>
     );
   }
@@ -103,19 +113,20 @@ export function useDatabase(): SQLiteDatabase {
 
 const styles = StyleSheet.create({
   loading: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: Colors.background,
-    gap: 12,
+    flex: 1, justifyContent: 'center', alignItems: 'center',
+    backgroundColor: Colors.background, gap: 12, padding: 20,
   },
-  errorText: { color: '#F87171', fontSize: 14, textAlign: 'center', padding: 20 },
+  loadingText: { color: Colors.textMuted, fontSize: 14, marginTop: 8 },
+  errorTitle: { color: '#F87171', fontSize: 18, fontWeight: '700' },
+  errorText: { color: '#999', fontSize: 12, textAlign: 'center' },
   retryBtn: {
-    backgroundColor: Colors.accent,
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-    borderRadius: 8,
+    backgroundColor: Colors.accent, paddingHorizontal: 32,
+    paddingVertical: 12, borderRadius: 10,
   },
-  retryText: { color: '#0D0D0D', fontWeight: '700', fontSize: 14 },
-  hintText: { color: '#666', fontSize: 12, marginTop: 8 },
+  retryText: { color: '#0D0D0D', fontWeight: '700', fontSize: 16 },
+  clearBtn: {
+    borderWidth: 1, borderColor: '#F87171', paddingHorizontal: 24,
+    paddingVertical: 10, borderRadius: 10,
+  },
+  clearText: { color: '#F87171', fontWeight: '600', fontSize: 14 },
 });

@@ -25,6 +25,12 @@ const MIGRATIONS: Migration[] = [
       'ALTER TABLE users ADD COLUMN phone TEXT DEFAULT NULL',
     ],
   },
+  {
+    version: 4,
+    statements: [
+      'ALTER TABLE users ADD COLUMN password TEXT DEFAULT NULL',
+    ],
+  },
 ];
 
 export async function runMigrations(db: SQLiteDatabase): Promise<void> {

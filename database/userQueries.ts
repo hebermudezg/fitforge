@@ -80,3 +80,31 @@ export async function updateUser(
     values
   );
 }
+
+export async function loginUser(
+  db: SQLiteDatabase,
+  email: string,
+  password: string
+): Promise<User | null> {
+  const row = await db.getFirstAsync<UserRow>(
+    'SELECT * FROM users WHERE email = ? AND password = ?',
+    [email, password]
+  );
+  return row ? rowToUser(row) : null;
+}
+
+export async function getUserById(
+  db: SQLiteDatabase,
+  userId: number
+): Promise<User | null> {
+  const row = await db.getFirstAsync<UserRow>(
+    'SELECT * FROM users WHERE id = ?',
+    [userId]
+  );
+  return row ? rowToUser(row) : null;
+}
+
+export async function getAllUsers(db: SQLiteDatabase): Promise<User[]> {
+  const rows = await db.getAllAsync<UserRow>('SELECT * FROM users ORDER BY id');
+  return rows.map(rowToUser);
+}

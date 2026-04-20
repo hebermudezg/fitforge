@@ -2,6 +2,8 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 
 interface DemoUser {
   name: string;
+  email: string;
+  password: string;
   gender: 'male' | 'female';
   height_cm: number;
   fitness_goal: string;
@@ -12,6 +14,8 @@ interface DemoUser {
 const DEMO_USERS: DemoUser[] = [
   {
     name: 'Diego Torres',
+    email: 'test1@fitforge.com',
+    password: 'test1',
     gender: 'male',
     height_cm: 180,
     fitness_goal: 'build',
@@ -41,6 +45,8 @@ const DEMO_USERS: DemoUser[] = [
   },
   {
     name: 'Valentina Rojas',
+    email: 'test2@fitforge.com',
+    password: 'test2',
     gender: 'female',
     height_cm: 168,
     fitness_goal: 'build',
@@ -70,6 +76,8 @@ const DEMO_USERS: DemoUser[] = [
   },
   {
     name: 'Andres Medina',
+    email: 'test3@fitforge.com',
+    password: 'test3',
     gender: 'male',
     height_cm: 175,
     fitness_goal: 'lose',
@@ -96,6 +104,8 @@ const DEMO_USERS: DemoUser[] = [
   },
   {
     name: 'Camila Vargas',
+    email: 'test4@fitforge.com',
+    password: 'test4',
     gender: 'female',
     height_cm: 163,
     fitness_goal: 'maintain',
@@ -130,9 +140,9 @@ export async function seedDatabase(db: SQLiteDatabase): Promise<void> {
 
   for (const demo of DEMO_USERS) {
     const userResult = await db.runAsync(
-      `INSERT INTO users (name, gender, height_cm, unit_system, terms_accepted, fitness_goal)
-       VALUES (?, ?, ?, 'metric', 0, ?)`,
-      [demo.name, demo.gender, demo.height_cm, demo.fitness_goal]
+      `INSERT INTO users (name, email, password, gender, height_cm, unit_system, terms_accepted, fitness_goal)
+       VALUES (?, ?, ?, ?, ?, 'metric', 1, ?)`,
+      [demo.name, demo.email, demo.password, demo.gender, demo.height_cm, demo.fitness_goal]
     );
     const userId = userResult.lastInsertRowId;
 

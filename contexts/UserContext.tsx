@@ -1,8 +1,9 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import type { User, Goal } from '@/types/models';
 import type { BodyPartKey } from '@/types/bodyParts';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useDatabase } from './DatabaseContext';
-import { getOrCreateUser, updateUser as updateUserDb } from '@/database/userQueries';
+import { getOrCreateUser, getUserById, updateUser as updateUserDb } from '@/database/userQueries';
 import { getGoals, upsertGoal, deleteGoal } from '@/database/goalQueries';
 
 interface UserContextType {
@@ -22,7 +23,15 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [goals, setGoals] = useState<Partial<Record<BodyPartKey, Goal>>>({});
 
   const loadUser = useCallback(async () => {
-    const u = await getOrCreateUser(db);
+    // Try to load the active user from session
+    const activeId = await AsyncStorage.getItem('active_user_id');
+    let u: User | null = null;
+    if (activeId) {
+      u = await getUserById(db, parseInt(activeId));
+    }
+    if (!u) {
+      u = await getOrCreateUser(db);
+    }
     setUser(u);
     const g = await getGoals(db, u.id);
     setGoals(g);
