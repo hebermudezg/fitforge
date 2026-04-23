@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "FitForge",
-    "slug": "fitforge",
+    "name": "BodySync",
+    "slug": "bodysync",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "fitforge",
+    "scheme": "bodysync",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "splash": {
@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.fitforge.app"
+      "bundleIdentifier": "com.bodysync.app"
     },
     "android": {
       "adaptiveIcon": {
@@ -23,7 +23,10 @@
         "backgroundColor": "#0D0D0D"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.fitforge.app"
+      "package": "com.bodysync.app",
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -33,10 +36,17 @@
     "plugins": [
       "expo-router",
       "expo-sqlite",
-      "expo-image-picker"
+      "expo-image-picker",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "04f45bfe-5f4d-464c-9362-4356ba71d113"
+      }
     }
   }
 }

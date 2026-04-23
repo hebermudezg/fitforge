@@ -19,7 +19,7 @@ const ThemeContext = createContext<ThemeContextType>({
   setMode: () => {},
 });
 
-const THEME_KEY = 'fitforge_theme';
+const THEME_KEY = 'bodysync_theme';
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const systemScheme = useColorScheme();

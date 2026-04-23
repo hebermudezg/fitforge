@@ -20,7 +20,7 @@ export const I18nContext = createContext<I18nContextType>({
   setLang: () => {},
 });
 
-const LANG_KEY = 'fitforge_lang';
+const LANG_KEY = 'bodysync_lang';
 
 export function I18nProvider({ children }: { children: React.ReactNode }) {
   const [lang, setLangState] = useState<Language>('es');

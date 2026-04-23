@@ -2,7 +2,7 @@ import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const NOTIF_KEY = 'fitforge_notifications_setup';
+const NOTIF_KEY = 'bodysync_notifications_setup';
 
 // Configure notification behavior
 Notifications.setNotificationHandler({
@@ -41,13 +41,13 @@ export async function scheduleWorkoutReminder(
   };
   const bodies = {
     en: [
-      'Your muscles are waiting. Open FitForge and crush it.',
+      'Your muscles are waiting. Open BodySync and crush it.',
       "Today's workout is ready. Don't skip it.",
       'Consistency beats perfection. Get your session in.',
       'The only bad workout is the one that didn\'t happen.',
     ],
     es: [
-      'Tus musculos te esperan. Abre FitForge y dale con todo.',
+      'Tus musculos te esperan. Abre BodySync y dale con todo.',
       'El entrenamiento de hoy esta listo. No lo saltes.',
       'La consistencia vence a la perfeccion. Haz tu sesion.',
       'El unico mal entrenamiento es el que no sucedio.',

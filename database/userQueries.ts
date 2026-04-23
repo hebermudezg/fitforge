@@ -1,5 +1,6 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 import type { User } from '@/types/models';
+import { hashPassword, verifyPassword } from '@/utils/auth';
 
 interface UserRow {
   id: number;
@@ -29,18 +30,52 @@ function rowToUser(row: UserRow): User {
   };
 }
 
+export async function createUser(
+  db: SQLiteDatabase,
+  data: {
+    name: string;
+    email: string;
+    password: string;
+    gender: 'male' | 'female';
+    heightCm?: number;
+    dateOfBirth?: string;
+    phone?: string;
+    fitnessGoal?: string;
+  }
+): Promise<User> {
+  const hashedPassword = await hashPassword(data.password);
+
+  const result = await db.runAsync(
+    `INSERT INTO users (name, email, password, gender, height_cm, date_of_birth, phone, unit_system, terms_accepted, terms_accepted_at, fitness_goal)
+     VALUES (?, ?, ?, ?, ?, ?, ?, 'metric', 1, datetime('now'), ?)`,
+    [
+      data.name,
+      data.email.toLowerCase(),
+      hashedPassword,
+      data.gender,
+      data.heightCm ?? null,
+      data.dateOfBirth ?? null,
+      data.phone ?? null,
+      data.fitnessGoal ?? null,
+    ]
+  );
+
+  const row = await db.getFirstAsync<UserRow>(
+    'SELECT * FROM users WHERE id = ?',
+    [result.lastInsertRowId]
+  );
+  return rowToUser(row!);
+}
+
 export async function getOrCreateUser(db: SQLiteDatabase): Promise<User> {
-  // Prefer real user (terms accepted) over seed/demo users
   const realUser = await db.getFirstAsync<UserRow>(
     'SELECT * FROM users WHERE terms_accepted = 1 ORDER BY id DESC LIMIT 1'
   );
   if (realUser) return rowToUser(realUser);
 
-  // Fallback to any user
   const anyUser = await db.getFirstAsync<UserRow>('SELECT * FROM users LIMIT 1');
   if (anyUser) return rowToUser(anyUser);
 
-  // Create new empty user
   const result = await db.runAsync(
     "INSERT INTO users (name, gender, unit_system) VALUES ('', 'male', 'metric')"
   );
@@ -86,31 +121,16 @@ export async function loginUser(
   email: string,
   password: string
 ): Promise<User | null> {
-  // First try exact match
   const row = await db.getFirstAsync<UserRow & { password?: string }>(
-    'SELECT * FROM users WHERE email = ? AND password = ?',
-    [email, password]
+    'SELECT * FROM users WHERE email = ?',
+    [email.toLowerCase()]
   );
-  if (row) return rowToUser(row);
+  if (!row || !row.password) return null;
 
-  // Debug: check if user exists without password check
-  const userExists = await db.getFirstAsync<{ id: number; email: string; password: string | null }>(
-    'SELECT id, email, password FROM users WHERE email = ?',
-    [email]
-  );
-  if (userExists) {
-    console.log('User found but password mismatch:', {
-      email, providedPass: password, storedPass: userExists.password,
-    });
-  } else {
-    // List all users for debug
-    const allUsers = await db.getAllAsync<{ id: number; email: string; password: string | null }>(
-      'SELECT id, email, password FROM users'
-    );
-    console.log('No user with that email. All users:', allUsers);
-  }
+  const valid = await verifyPassword(password, row.password);
+  if (!valid) return null;
 
-  return null;
+  return rowToUser(row);
 }
 
 export async function getUserById(
@@ -130,7 +150,7 @@ export async function getUserByEmail(
 ): Promise<User | null> {
   const row = await db.getFirstAsync<UserRow>(
     'SELECT * FROM users WHERE email = ?',
-    [email]
+    [email.toLowerCase()]
   );
   return row ? rowToUser(row) : null;
 }

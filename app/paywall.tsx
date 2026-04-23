@@ -36,8 +36,8 @@ const PLANS: PlanConfig[] = [
   {
     tier: 'pro',
     name: 'Pro',
-    price: { en: '$4.99', es: '$4.99' },
-    period: { en: '/month', es: '/mes' },
+    price: { en: '$8.99', es: '$8.99' },
+    period: { en: '/ 3 months', es: '/ 3 meses' },
     highlighted: true,
     features: [
       { en: 'ALL muscle measurements', es: 'TODAS las medidas de musculos' },
@@ -53,7 +53,7 @@ const PLANS: PlanConfig[] = [
   {
     tier: 'premium',
     name: 'Premium',
-    price: { en: '$29.99', es: '$29.99' },
+    price: { en: '$24.99', es: '$24.99' },
     period: { en: '/year', es: '/ano' },
     highlighted: false,
     features: [
@@ -70,12 +70,22 @@ export default function PaywallScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const { lang } = useI18n();
-  const { tier: currentTier, upgradeTo } = useSubscription();
+  const { tier: currentTier, packages, purchase, restore } = useSubscription();
 
-  const handleSelect = (tier: PlanTier) => {
-    // In production: trigger RevenueCat purchase flow
-    // For demo: simulate upgrade
-    upgradeTo(tier);
+  const handleSelect = async (tier: PlanTier) => {
+    if (tier === 'free') {
+      router.back();
+      return;
+    }
+    // Find matching RevenueCat package
+    const pkg = packages.find((p) =>
+      tier === 'pro'
+        ? p.identifier === '$rc_quarterly'
+        : p.identifier === '$rc_annual'
+    );
+    if (pkg) {
+      await purchase(pkg);
+    }
     router.back();
   };
 
@@ -169,6 +179,12 @@ export default function PaywallScreen() {
           );
         })}
 
+        <Pressable onPress={restore} style={styles.restoreBtn}>
+          <Text style={[styles.restoreText, { color: colors.accent }]}>
+            {lang === 'es' ? 'Restaurar compras' : 'Restore purchases'}
+          </Text>
+        </Pressable>
+
         <Text style={[styles.legal, { color: colors.textMuted }]}>
           {lang === 'es'
             ? 'Los pagos se procesan a traves de App Store / Google Play. Puedes cancelar en cualquier momento.'
@@ -210,5 +226,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', paddingVertical: 12, borderRadius: 12, borderWidth: 1,
   },
   currentText: { ...Typography.body, fontWeight: '600' },
+  restoreBtn: { alignItems: 'center', marginTop: Layout.spacing.lg, padding: 12 },
+  restoreText: { ...Typography.body, fontWeight: '600' },
   legal: { ...Typography.caption, textAlign: 'center', marginTop: Layout.spacing.md, lineHeight: 18 },
 });

@@ -8,6 +8,7 @@ import { BodyModel } from '@/components/body/BodyModel';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { useMeasurements } from '@/contexts/MeasurementContext';
 import { useUser } from '@/contexts/UserContext';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useI18n } from '@/i18n';
 import { Typography } from '@/constants/Typography';
@@ -45,11 +46,24 @@ export default function MeasureScreen() {
   const { t } = useI18n();
   const { user } = useUser();
   const { latestMeasurements } = useMeasurements();
+  const { canAccess } = useSubscription();
   const [selectedPart, setSelectedPart] = useState<BodyPartKey | null>(null);
   const [sideIndex, setSideIndex] = useState(0);
   const side = sideIndex === 0 ? 'front' : 'back';
 
+  // Free users: only first 3 muscles unlocked
+  const FREE_MUSCLES: MuscleKey[] = ['chest', 'biceps', 'quadriceps'];
+  const isMuscleUnlocked = (key: BodyPartKey): boolean => {
+    if (canAccess('unlimited_measurements')) return true;
+    if (GENERAL_METRIC_KEYS.includes(key as any)) return true;
+    return FREE_MUSCLES.includes(key as MuscleKey);
+  };
+
   const handleBodyPartTap = (key: BodyPartKey) => {
+    if (!isMuscleUnlocked(key)) {
+      router.push('/paywall' as any);
+      return;
+    }
     if (selectedPart === key) {
       router.push(`/measurement/${key}` as any);
     } else {
@@ -151,6 +165,7 @@ export default function MeasureScreen() {
             const displayUnit = getDisplayUnit(partDef.unit, user.unitSystem);
             const label = (t.bodyParts as any)[key] || partDef.label;
             const isSelected = selectedPart === key;
+            const locked = !isMuscleUnlocked(key);
 
             return (
               <Pressable
@@ -159,13 +174,14 @@ export default function MeasureScreen() {
                   styles.chip,
                   { backgroundColor: colors.surfaceLight, borderColor: colors.border },
                   isSelected && { backgroundColor: colors.accent, borderColor: colors.accent },
+                  locked && { opacity: 0.5 },
                 ]}
                 onPress={() => handleBodyPartTap(key)}
               >
                 <Ionicons
-                  name={MUSCLE_ICONS[key] as any}
+                  name={locked ? 'lock-closed' : MUSCLE_ICONS[key] as any}
                   size={14}
-                  color={isSelected ? '#0D0D0D' : colors.accent}
+                  color={isSelected ? '#0D0D0D' : locked ? colors.textMuted : colors.accent}
                 />
                 <View>
                   <Text style={[styles.chipLabel, { color: isSelected ? '#0D0D0D' : colors.textPrimary }]}>

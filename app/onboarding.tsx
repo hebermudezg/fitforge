@@ -17,6 +17,8 @@ import * as Haptics from 'expo-haptics';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { useUser } from '@/contexts/UserContext';
 import { useMeasurements } from '@/contexts/MeasurementContext';
+import { useDatabase } from '@/contexts/DatabaseContext';
+import { createUser } from '@/database/userQueries';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useI18n } from '@/i18n';
 import { Typography } from '@/constants/Typography';
@@ -32,8 +34,9 @@ export default function OnboardingScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const { t, lang, setLang } = useI18n();
-  const { updateUser } = useUser();
+  const { refreshUser } = useUser();
   const { addMeasurement } = useMeasurements();
+  const db = useDatabase();
 
   const [step, setStep] = useState<Step>('welcome');
   const [name, setName] = useState('');
@@ -41,6 +44,8 @@ export default function OnboardingScreen() {
   const [heightCm, setHeightCm] = useState('');
   const [weightKg, setWeightKg] = useState('');
   const [age, setAge] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
   const [goalIndex, setGoalIndex] = useState(0);
   const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
@@ -51,7 +56,7 @@ export default function OnboardingScreen() {
 
   const canProceed = () => {
     if (step === 'disclaimer') return disclaimerAccepted;
-    if (step === 'profile') return name.trim().length > 0;
+    if (step === 'profile') return name.trim().length > 0 && email.trim().length > 0 && password.length >= 4;
     return true;
   };
 
@@ -63,14 +68,13 @@ export default function OnboardingScreen() {
     if (nextIdx < STEPS.length) {
       setStep(STEPS[nextIdx]);
     } else {
-      // SAVE ALL DATA TO DB
+      // CREATE USER IN DB
       const gender = genderIndex === 0 ? 'male' : 'female';
       const height = parseFloat(heightCm);
       const weight = parseFloat(weightKg);
       const userAge = parseInt(age);
       const goal = GOAL_KEYS[goalIndex];
 
-      // Calculate date of birth from age
       let dob: string | undefined;
       if (!isNaN(userAge) && userAge > 0) {
         const d = new Date();
@@ -78,24 +82,32 @@ export default function OnboardingScreen() {
         dob = d.toISOString().split('T')[0];
       }
 
-      // Save ALL to DB — terms, goal, phone, profile
-      await updateUser({
+      const newUser = await createUser(db, {
         name: name.trim(),
+        email: email.trim().toLowerCase(),
+        password,
         gender: gender as 'male' | 'female',
         heightCm: !isNaN(height) && height > 0 ? height : undefined,
         dateOfBirth: dob,
         phone: phone.trim() || undefined,
-        termsAccepted: true,
         fitnessGoal: goal,
-      } as any);
+      });
+
+      // Set session
+      await AsyncStorage.setItem('user_session', JSON.stringify({
+        userId: newUser.id, email: newUser.email, loggedIn: true,
+      }));
+      await AsyncStorage.setItem('active_user_id', newUser.id.toString());
+      await AsyncStorage.setItem('onboarding_complete', 'true');
+      await AsyncStorage.setItem('fitness_goal', goal);
+
+      // Refresh user context
+      await refreshUser();
 
       // Save initial weight
       if (!isNaN(weight) && weight > 0) {
         await addMeasurement('weight', weight);
       }
-
-      await AsyncStorage.setItem('onboarding_complete', 'true');
-      await AsyncStorage.setItem('fitness_goal', goal);
 
       // Setup push notifications
       await setupNotifications(lang as 'en' | 'es');
@@ -129,7 +141,7 @@ export default function OnboardingScreen() {
             <View style={[styles.iconCircle, { backgroundColor: colors.accent + '15' }]}>
               <Ionicons name="fitness" size={48} color={colors.accent} />
             </View>
-            <Text style={[styles.welcomeTitle, { color: colors.accent }]}>FitForge</Text>
+            <Text style={[styles.welcomeTitle, { color: colors.accent }]}>BodySync</Text>
             <Text style={[styles.welcomeSubtitle, { color: colors.textSecondary }]}>
               {t.onboarding.tagline}
             </Text>
@@ -204,6 +216,26 @@ export default function OnboardingScreen() {
               value={name} onChangeText={setName}
               placeholder={lang === 'es' ? 'Tu nombre' : 'Your name'}
               placeholderTextColor={colors.textMuted}
+            />
+
+            <Text style={[styles.fieldLabel, { color: colors.textMuted }]}>EMAIL *</Text>
+            <TextInput
+              style={[styles.input, { color: colors.textPrimary, backgroundColor: colors.surface, borderColor: colors.border }]}
+              value={email} onChangeText={setEmail}
+              placeholder="tu@email.com"
+              placeholderTextColor={colors.textMuted}
+              keyboardType="email-address" autoCapitalize="none"
+            />
+
+            <Text style={[styles.fieldLabel, { color: colors.textMuted }]}>
+              {lang === 'es' ? 'CONTRASENA *' : 'PASSWORD *'}
+            </Text>
+            <TextInput
+              style={[styles.input, { color: colors.textPrimary, backgroundColor: colors.surface, borderColor: colors.border }]}
+              value={password} onChangeText={setPassword}
+              placeholder={lang === 'es' ? 'Minimo 4 caracteres' : 'Minimum 4 characters'}
+              placeholderTextColor={colors.textMuted}
+              secureTextEntry
             />
 
             <Text style={[styles.fieldLabel, { color: colors.textMuted }]}>{t.profile.gender}</Text>

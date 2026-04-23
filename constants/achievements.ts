@@ -144,14 +144,14 @@ export const ACHIEVEMENTS: Achievement[] = [
     id: 'active_7',
     icon: 'calendar',
     name: { en: 'First Week', es: 'Primera Semana' },
-    description: { en: '7 days using FitForge', es: '7 dias usando FitForge' },
+    description: { en: '7 days using BodySync', es: '7 dias usando BodySync' },
     condition: (s) => s.daysActive >= 7,
   },
   {
     id: 'active_30',
     icon: 'star',
     name: { en: 'One Month Strong', es: 'Un Mes Fuerte' },
-    description: { en: '30 days using FitForge', es: '30 dias usando FitForge' },
+    description: { en: '30 days using BodySync', es: '30 dias usando BodySync' },
     condition: (s) => s.daysActive >= 30,
   },
 ];

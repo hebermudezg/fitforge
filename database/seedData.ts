@@ -14,7 +14,7 @@ interface DemoUser {
 const DEMO_USERS: DemoUser[] = [
   {
     name: 'Diego Torres',
-    email: 'test1@fitforge.com',
+    email: 'test1@bodysync.app',
     password: 'test1',
     gender: 'male',
     height_cm: 180,
@@ -45,7 +45,7 @@ const DEMO_USERS: DemoUser[] = [
   },
   {
     name: 'Valentina Rojas',
-    email: 'test2@fitforge.com',
+    email: 'test2@bodysync.app',
     password: 'test2',
     gender: 'female',
     height_cm: 168,
@@ -76,7 +76,7 @@ const DEMO_USERS: DemoUser[] = [
   },
   {
     name: 'Andres Medina',
-    email: 'test3@fitforge.com',
+    email: 'test3@bodysync.app',
     password: 'test3',
     gender: 'male',
     height_cm: 175,
@@ -104,7 +104,7 @@ const DEMO_USERS: DemoUser[] = [
   },
   {
     name: 'Camila Vargas',
-    email: 'test4@fitforge.com',
+    email: 'test4@bodysync.app',
     password: 'test4',
     gender: 'female',
     height_cm: 163,

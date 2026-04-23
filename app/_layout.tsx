@@ -103,6 +103,7 @@ function RootLayoutNav({ authState }: { authState: 'login' | 'onboarding' | 'app
                   }}
                 />
                 <Stack.Screen name="paywall" options={{ presentation: 'modal' }} />
+                <Stack.Screen name="privacy" options={{ presentation: 'modal' }} />
               </Stack>
               {/* Auto-redirect based on auth state */}
               {authState === 'app' && <Redirect href="/(tabs)" />}

@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
+import Purchases, { type CustomerInfo, type PurchasesPackage } from 'react-native-purchases';
 
 export type PlanTier = 'free' | 'pro' | 'premium';
 
@@ -10,21 +11,21 @@ interface SubscriptionContextType {
   canAccess: (feature: FeatureKey) => boolean;
   showPaywall: boolean;
   setShowPaywall: (show: boolean) => void;
-  // For demo: simulate upgrade
-  upgradeTo: (tier: PlanTier) => void;
+  purchase: (pkg: PurchasesPackage) => Promise<boolean>;
+  packages: PurchasesPackage[];
+  restore: () => Promise<void>;
 }
 
-// Features gated by tier
 export type FeatureKey =
-  | 'unlimited_measurements'  // Free: 3 muscles, Pro: all
-  | 'progress_charts'         // Free: basic, Pro: advanced
-  | 'export_data'             // Pro+
-  | 'custom_routines'         // Pro+
-  | 'all_exercises'           // Free: 5, Pro: all
-  | 'ai_coach'                // Premium only
-  | 'nutrition_tracking'      // Premium only
-  | 'body_comparison'         // Pro+
-  | 'workout_history';        // Pro+
+  | 'unlimited_measurements'
+  | 'progress_charts'
+  | 'export_data'
+  | 'custom_routines'
+  | 'all_exercises'
+  | 'ai_coach'
+  | 'nutrition_tracking'
+  | 'body_comparison'
+  | 'workout_history';
 
 const FEATURE_TIERS: Record<FeatureKey, PlanTier> = {
   unlimited_measurements: 'pro',
@@ -39,7 +40,20 @@ const FEATURE_TIERS: Record<FeatureKey, PlanTier> = {
 };
 
 const TIER_LEVELS: Record<PlanTier, number> = { free: 0, pro: 1, premium: 2 };
-const SUB_KEY = 'fitforge_subscription';
+
+// TODO: Replace with your RevenueCat API keys from https://app.revenuecat.com
+const RC_API_KEY_APPLE = 'appl_YOUR_REVENUECAT_APPLE_KEY';
+const RC_API_KEY_GOOGLE = 'goog_YOUR_REVENUECAT_GOOGLE_KEY';
+
+// RevenueCat entitlement IDs (configure these in RevenueCat dashboard)
+const ENTITLEMENT_PRO = 'pro';
+const ENTITLEMENT_PREMIUM = 'premium';
+
+function tierFromCustomerInfo(info: CustomerInfo): PlanTier {
+  if (info.entitlements.active[ENTITLEMENT_PREMIUM]) return 'premium';
+  if (info.entitlements.active[ENTITLEMENT_PRO]) return 'pro';
+  return 'free';
+}
 
 const SubscriptionContext = createContext<SubscriptionContextType>({
   tier: 'free',
@@ -48,16 +62,41 @@ const SubscriptionContext = createContext<SubscriptionContextType>({
   canAccess: () => false,
   showPaywall: false,
   setShowPaywall: () => {},
-  upgradeTo: () => {},
+  purchase: async () => false,
+  packages: [],
+  restore: async () => {},
 });
 
 export function SubscriptionProvider({ children }: { children: React.ReactNode }) {
   const [tier, setTier] = useState<PlanTier>('free');
   const [showPaywall, setShowPaywall] = useState(false);
+  const [packages, setPackages] = useState<PurchasesPackage[]>([]);
 
   useEffect(() => {
-    AsyncStorage.getItem(SUB_KEY).then((saved) => {
-      if (saved === 'pro' || saved === 'premium') setTier(saved);
+    if (Platform.OS === 'web') return;
+
+    const apiKey = Platform.OS === 'ios' ? RC_API_KEY_APPLE : RC_API_KEY_GOOGLE;
+
+    // Only configure if real keys are set
+    if (apiKey.includes('YOUR_REVENUECAT')) return;
+
+    Purchases.configure({ apiKey });
+
+    // Get current subscription status
+    Purchases.getCustomerInfo().then((info) => {
+      setTier(tierFromCustomerInfo(info));
+    });
+
+    // Load available packages
+    Purchases.getOfferings().then((offerings) => {
+      if (offerings.current) {
+        setPackages(offerings.current.availablePackages);
+      }
+    });
+
+    // Listen for subscription changes
+    Purchases.addCustomerInfoUpdateListener((info) => {
+      setTier(tierFromCustomerInfo(info));
     });
   }, []);
 
@@ -69,15 +108,28 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     return TIER_LEVELS[tier] >= TIER_LEVELS[required];
   }, [tier]);
 
-  const upgradeTo = useCallback((newTier: PlanTier) => {
-    setTier(newTier);
-    AsyncStorage.setItem(SUB_KEY, newTier);
-    setShowPaywall(false);
+  const purchase = useCallback(async (pkg: PurchasesPackage): Promise<boolean> => {
+    try {
+      const { customerInfo } = await Purchases.purchasePackage(pkg);
+      setTier(tierFromCustomerInfo(customerInfo));
+      setShowPaywall(false);
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
+
+  const restore = useCallback(async () => {
+    try {
+      const info = await Purchases.restorePurchases();
+      setTier(tierFromCustomerInfo(info));
+    } catch {}
   }, []);
 
   return (
     <SubscriptionContext.Provider value={{
-      tier, isPro, isPremium, canAccess, showPaywall, setShowPaywall, upgradeTo,
+      tier, isPro, isPremium, canAccess, showPaywall, setShowPaywall,
+      purchase, packages, restore,
     }}>
       {children}
     </SubscriptionContext.Provider>

@@ -5,12 +5,18 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as AuthSession from 'expo-auth-session';
+import * as WebBrowser from 'expo-web-browser';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useI18n } from '@/i18n';
 import { useDatabase } from '@/contexts/DatabaseContext';
-import { loginUser, getUserByEmail, getAllUsers } from '@/database/userQueries';
+import { loginUser, createUser, getUserByEmail } from '@/database/userQueries';
 import { Typography } from '@/constants/Typography';
 import { Layout } from '@/constants/Layout';
+
+WebBrowser.maybeCompleteAuthSession();
+
+const GOOGLE_WEB_CLIENT_ID = '876055616203-g700qf8i7edhvscnns3t3uvna503juun.apps.googleusercontent.com';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -22,9 +28,61 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState('');
-  const [showDemo, setShowDemo] = useState(false);
 
   const isES = lang === 'es';
+
+  const redirectUri = AuthSession.makeRedirectUri({ path: 'redirect' });
+
+  const [googleRequest, googleResponse, googlePromptAsync] = AuthSession.useAuthRequest(
+    {
+      clientId: GOOGLE_WEB_CLIENT_ID,
+      scopes: ['openid', 'profile', 'email'],
+      redirectUri,
+      responseType: 'token',
+    },
+    {
+      authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
+    }
+  );
+
+  // Handle Google sign-in response
+  React.useEffect(() => {
+    if (googleResponse?.type !== 'success') return;
+    const { access_token } = googleResponse.params;
+    if (!access_token) return;
+
+    (async () => {
+      // Fetch Google profile
+      const res = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+        headers: { Authorization: `Bearer ${access_token}` },
+      });
+      const profile = await res.json();
+      if (!profile.email) return;
+
+      // Find or create user
+      let user = await getUserByEmail(db, profile.email);
+      if (!user) {
+        user = await createUser(db, {
+          name: profile.name || '',
+          email: profile.email,
+          password: `google_${profile.id}`,
+          gender: 'male',
+        });
+      }
+
+      await AsyncStorage.setItem('user_session', JSON.stringify({
+        userId: user.id, email: user.email, loggedIn: true,
+      }));
+      await AsyncStorage.setItem('onboarding_complete', 'true');
+      await AsyncStorage.setItem('active_user_id', user.id.toString());
+
+      if (Platform.OS === 'web') {
+        window.location.href = '/';
+      } else {
+        router.replace('/(tabs)');
+      }
+    })();
+  }, [googleResponse]);
 
   const handleLogin = async () => {
     if (!email.trim()) {
@@ -36,11 +94,7 @@ export default function LoginScreen() {
       return;
     }
 
-    let user = await loginUser(db, email.trim().toLowerCase(), password);
-    // Fallback: email-only
-    if (!user) {
-      user = await getUserByEmail(db, email.trim().toLowerCase());
-    }
+    const user = await loginUser(db, email.trim().toLowerCase(), password);
     if (!user) {
       setLoginError(isES ? 'Email o contrasena incorrectos' : 'Wrong email or password');
       return;
@@ -61,53 +115,6 @@ export default function LoginScreen() {
     }
   };
 
-  const handleDemoLogin = async (demoEmail: string, demoPass: string) => {
-    // Try login by email+password
-    let user = await loginUser(db, demoEmail, demoPass);
-
-    // Fallback: find by email only
-    if (!user) {
-      user = await getUserByEmail(db, demoEmail);
-    }
-
-    if (!user) return;
-
-    await AsyncStorage.setItem('user_session', JSON.stringify({
-      userId: user.id, email: user.email || demoEmail, loggedIn: true,
-    }));
-    await AsyncStorage.setItem('onboarding_complete', 'true');
-    await AsyncStorage.setItem('active_user_id', user.id.toString());
-    // Force full reload to pick up new user in all contexts
-    if (Platform.OS === 'web') {
-      window.location.href = '/';
-    } else {
-      router.replace('/(tabs)');
-    }
-  };
-
-  const DEMO_PROFILES = [
-    {
-      email: 'test1@fitforge.com', pass: 'test1',
-      name: 'Diego Torres', desc: isES ? 'Hombre musculoso' : 'Muscular man',
-      icon: 'barbell', color: '#FFD200',
-    },
-    {
-      email: 'test2@fitforge.com', pass: 'test2',
-      name: 'Valentina Rojas', desc: isES ? 'Mujer fit' : 'Fit woman',
-      icon: 'fitness', color: '#FF6B81',
-    },
-    {
-      email: 'test3@fitforge.com', pass: 'test3',
-      name: 'Andres Medina', desc: isES ? 'Hombre normal' : 'Average man',
-      icon: 'person', color: '#60A5FA',
-    },
-    {
-      email: 'test4@fitforge.com', pass: 'test4',
-      name: 'Camila Vargas', desc: isES ? 'Mujer normal' : 'Average woman',
-      icon: 'person', color: '#4ADE80',
-    },
-  ];
-
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
@@ -120,7 +127,7 @@ export default function LoginScreen() {
             <View style={[styles.logoCircle, { backgroundColor: colors.accent + '15' }]}>
               <Ionicons name="fitness" size={48} color={colors.accent} />
             </View>
-            <Text style={[styles.logoText, { color: colors.accent }]}>FitForge</Text>
+            <Text style={[styles.logoText, { color: colors.accent }]}>BodySync</Text>
             <Text style={[styles.tagline, { color: colors.textSecondary }]}>
               {isES ? 'Tu cuerpo. Tu progreso. Tu fuerza.' : 'Your body. Your progress. Your strength.'}
             </Text>
@@ -183,44 +190,31 @@ export default function LoginScreen() {
 
             {/* Social */}
             <View style={styles.socialRow}>
-              <Pressable style={[styles.socialBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Pressable
+                style={[styles.socialBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                onPress={() => {
+                  if (__DEV__) {
+                    setLoginError(isES ? 'Google login funciona en el build, no en Expo Go' : 'Google login works in builds, not Expo Go');
+                  } else {
+                    googlePromptAsync();
+                  }
+                }}
+              >
                 <Ionicons name="logo-google" size={22} color="#DB4437" />
                 <Text style={[styles.socialText, { color: colors.textPrimary }]}>Google</Text>
               </Pressable>
-              <Pressable style={[styles.socialBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Pressable
+                style={[styles.socialBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                onPress={() => {
+                  // TODO: Integrate Apple Sign-In with expo-apple-authentication
+                  setLoginError(isES ? 'Proximamente' : 'Coming soon');
+                }}
+              >
                 <Ionicons name="logo-apple" size={22} color={colors.textPrimary} />
                 <Text style={[styles.socialText, { color: colors.textPrimary }]}>Apple</Text>
               </Pressable>
             </View>
           </View>
-
-          {/* Demo profiles */}
-          <Pressable onPress={() => setShowDemo(!showDemo)} style={styles.demoToggle}>
-            <Ionicons name="people-outline" size={18} color={colors.accent} />
-            <Text style={[styles.demoToggleText, { color: colors.accent }]}>
-              {isES ? 'Perfiles de prueba' : 'Demo profiles'}
-            </Text>
-            <Ionicons name={showDemo ? 'chevron-up' : 'chevron-down'} size={16} color={colors.accent} />
-          </Pressable>
-
-          {showDemo && (
-            <View style={styles.demoGrid}>
-              {DEMO_PROFILES.map((profile) => (
-                <Pressable
-                  key={profile.email}
-                  style={[styles.demoCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
-                  onPress={() => handleDemoLogin(profile.email, profile.pass)}
-                >
-                  <View style={[styles.demoIcon, { backgroundColor: profile.color + '20' }]}>
-                    <Ionicons name={profile.icon as any} size={22} color={profile.color} />
-                  </View>
-                  <Text style={[styles.demoName, { color: colors.textPrimary }]}>{profile.name}</Text>
-                  <Text style={[styles.demoDesc, { color: colors.textMuted }]}>{profile.desc}</Text>
-                  <Text style={[styles.demoEmail, { color: colors.textMuted }]}>{profile.email}</Text>
-                </Pressable>
-              ))}
-            </View>
-          )}
 
           {/* Create account */}
           <View style={styles.signupSection}>
@@ -272,22 +266,6 @@ const styles = StyleSheet.create({
     gap: 8, paddingVertical: 14, borderRadius: 12, borderWidth: 1,
   },
   socialText: { ...Typography.body, fontWeight: '600' },
-
-  // Demo profiles
-  demoToggle: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 6, marginTop: 20, paddingVertical: 8,
-  },
-  demoToggleText: { ...Typography.bodySmall, fontWeight: '600' },
-  demoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 10 },
-  demoCard: {
-    width: '48%', borderRadius: 12, borderWidth: 1, padding: 12,
-    alignItems: 'center', gap: 4,
-  },
-  demoIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  demoName: { ...Typography.bodySmall, fontWeight: '700', marginTop: 4 },
-  demoDesc: { ...Typography.caption },
-  demoEmail: { ...Typography.caption, fontSize: 10 },
 
   signupSection: { flexDirection: 'row', justifyContent: 'center', marginTop: 24 },
   signupText: { ...Typography.body },

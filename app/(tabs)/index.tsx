@@ -65,7 +65,7 @@ export default function DashboardScreen() {
 
         {/* Header + Quote */}
         <View style={styles.headerSection}>
-          <Text style={[styles.logo, { color: colors.accent }]}>FitForge</Text>
+          <Text style={[styles.logo, { color: colors.accent }]}>BodySync</Text>
           <Text style={[styles.greeting, { color: colors.textSecondary }]}>
             {greeting}{user.name ? `, ${user.name}` : ''}
           </Text>
@@ -298,7 +298,7 @@ export default function DashboardScreen() {
               <Ionicons name="diamond" size={24} color={colors.accent} />
               <View style={styles.upgradeInfo}>
                 <Text style={[styles.upgradeTitle, { color: colors.accent }]}>
-                  {lang === 'es' ? 'Desbloquea FitForge Pro' : 'Unlock FitForge Pro'}
+                  {lang === 'es' ? 'Desbloquea BodySync Pro' : 'Unlock BodySync Pro'}
                 </Text>
                 <Text style={[styles.upgradeDesc, { color: colors.textSecondary }]}>
                   {lang === 'es'

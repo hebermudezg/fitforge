@@ -10,7 +10,7 @@ export default {
 
   // Dashboard
   dashboard: {
-    title: 'FitForge',
+    title: 'BodySync',
     welcome: 'Welcome back',
     todayWorkout: "Today's Workout",
     restDay: 'Rest Day',
@@ -140,7 +140,7 @@ export default {
     target: 'Target',
     logout: 'Reset & Show Onboarding',
     logoutConfirm: 'This will reset your session and show the onboarding screens again. Your data will not be deleted.',
-    version: 'FitForge v1.0.0',
+    version: 'BodySync v1.0.0',
   },
 
   // Onboarding
@@ -151,7 +151,7 @@ export default {
     feature3: 'Weekly workout planner',
     feature4: 'Exercise library with examples',
     disclaimerTitle: 'Health Disclaimer',
-    disclaimerText1: 'FitForge is a body measurement tracking tool designed to help you monitor your fitness journey.',
+    disclaimerText1: 'BodySync is a body measurement tracking tool designed to help you monitor your fitness journey.',
     disclaimerText2: 'This app is NOT a substitute for professional medical advice, diagnosis, or treatment.',
     disclaimerHighlight: 'Always consult a qualified physician, nutritionist, or certified fitness professional before starting any exercise program or making significant changes to your diet.',
     disclaimerText3: 'If you experience pain, dizziness, or any unusual symptoms during exercise, stop immediately and seek medical attention.',

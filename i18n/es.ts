@@ -8,7 +8,7 @@ export default {
   },
 
   dashboard: {
-    title: 'FitForge',
+    title: 'BodySync',
     welcome: 'Bienvenido de nuevo',
     todayWorkout: 'Entrenamiento de Hoy',
     restDay: 'Dia de Descanso',
@@ -131,7 +131,7 @@ export default {
     target: 'Meta',
     logout: 'Reiniciar y Mostrar Inicio',
     logoutConfirm: 'Esto reiniciara tu sesion y mostrara las pantallas de inicio de nuevo. Tus datos no se eliminaran.',
-    version: 'FitForge v1.0.0',
+    version: 'BodySync v1.0.0',
   },
 
   onboarding: {
@@ -141,7 +141,7 @@ export default {
     feature3: 'Planificador de rutina semanal',
     feature4: 'Libreria de ejercicios con ejemplos',
     disclaimerTitle: 'Aviso de Salud',
-    disclaimerText1: 'FitForge es una herramienta de seguimiento de medidas corporales disenada para ayudarte a monitorear tu camino fitness.',
+    disclaimerText1: 'BodySync es una herramienta de seguimiento de medidas corporales disenada para ayudarte a monitorear tu camino fitness.',
     disclaimerText2: 'Esta aplicacion NO es un sustituto de consejo medico profesional, diagnostico o tratamiento.',
     disclaimerHighlight: 'Siempre consulta a un medico calificado, nutricionista o profesional certificado en fitness antes de comenzar cualquier programa de ejercicio o hacer cambios significativos en tu dieta.',
     disclaimerText3: 'Si experimentas dolor, mareos o cualquier sintoma inusual durante el ejercicio, detente inmediatamente y busca atencion medica.',

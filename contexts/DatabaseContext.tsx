@@ -2,7 +2,6 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import * as SQLite from 'expo-sqlite';
 import { runMigrations } from '@/database/migrations';
-import { seedDatabase } from '@/database/seedData';
 import { Colors } from '@/constants/Colors';
 
 type SQLiteDatabase = SQLite.SQLiteDatabase;
@@ -19,7 +18,7 @@ async function clearWebDatabase(): Promise<void> {
     const root = await navigator.storage.getDirectory();
     // Try to remove the OPFS directory used by expo-sqlite
     for await (const [name] of (root as any).entries()) {
-      if (name.includes('sqlite') || name.includes('fitforge')) {
+      if (name.includes('sqlite') || name.includes('bodysync')) {
         await root.removeEntry(name, { recursive: true });
       }
     }
@@ -31,10 +30,9 @@ async function initDatabase(): Promise<SQLiteDatabase> {
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      const database = await SQLite.openDatabaseAsync('fitforge.db');
+      const database = await SQLite.openDatabaseAsync('bodysync.db');
       await database.execAsync('PRAGMA journal_mode = WAL;');
       await runMigrations(database);
-      try { await seedDatabase(database); } catch {}
       return database;
     } catch (e: any) {
       console.warn(`DB attempt ${attempt}:`, e.message);
