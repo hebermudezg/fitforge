@@ -12,7 +12,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useI18n } from '@/i18n';
 import { Typography } from '@/constants/Typography';
 import { Layout } from '@/constants/Layout';
-import { BODY_PARTS, BODY_PART_KEYS, type BodyPartKey } from '@/types/bodyParts';
+import { BODY_PARTS, BODY_PART_KEYS, isMeasurable, type BodyPartKey } from '@/types/bodyParts';
 import { convertValue, getDisplayUnit } from '@/utils/conversions';
 import { getRelativeDate } from '@/utils/formatting';
 import { getTodayWorkout, getWeeklyPlan } from '@/constants/exercises';
@@ -224,7 +224,8 @@ export default function DashboardScreen() {
           {t.dashboard.recentMeasurements}
         </Text>
         <View style={[styles.measureGrid, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          {BODY_PART_KEYS.map((key) => {
+          {/* Only measurable parts — info-only muscles live in the Measure tab's body model */}
+          {BODY_PART_KEYS.filter(isMeasurable).map((key) => {
             const partDef = BODY_PARTS[key];
             const m = latestMeasurements[key];
             const val = m ? convertValue(m.value, partDef.unit, user.unitSystem) : null;

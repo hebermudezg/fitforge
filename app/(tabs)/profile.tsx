@@ -14,7 +14,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { Colors } from '@/constants/Colors';
 import { Typography } from '@/constants/Typography';
 import { Layout } from '@/constants/Layout';
-import { BODY_PARTS, BODY_PART_KEYS, type BodyPartKey } from '@/types/bodyParts';
+import { BODY_PARTS, BODY_PART_KEYS, isMeasurable, type BodyPartKey } from '@/types/bodyParts';
 import { useMeasurements } from '@/contexts/MeasurementContext';
 import { useI18n } from '@/i18n';
 import { convertValue, getDisplayUnit } from '@/utils/conversions';
@@ -171,7 +171,7 @@ export default function ProfileScreen() {
 
         {/* Goals */}
         <Text style={styles.sectionTitle}>{t.profile.goals}</Text>
-        {BODY_PART_KEYS.map((key) => {
+        {BODY_PART_KEYS.filter(isMeasurable).map((key) => {
           const partDef = BODY_PARTS[key];
           const displayUnit = getDisplayUnit(partDef.unit, user.unitSystem);
           const goal = goals[key];
