@@ -1,35 +1,49 @@
-// Muscles that map to body model SVG regions (interactive)
+// All muscles map 1:1 to a body model SVG region (interactive + educational).
+// `measurable: true`  → people realistically take this girth with a tape (entry enabled).
+// `measurable: false` → shown for anatomy/education only; tapping shows info, no entry.
 export const MUSCLE_PARTS = {
-  // Upper body - Front
-  neck: { label: 'Neck', unit: 'cm', category: 'upper', side: 'front' },
-  trapezius: { label: 'Trapezius', unit: 'cm', category: 'upper', side: 'both' },
-  deltoids: { label: 'Deltoids', unit: 'cm', category: 'upper', side: 'both' },
-  chest: { label: 'Chest', unit: 'cm', category: 'upper', side: 'front' },
-  biceps: { label: 'Biceps', unit: 'cm', category: 'upper', side: 'front' },
-  triceps: { label: 'Triceps', unit: 'cm', category: 'upper', side: 'back' },
-  forearms: { label: 'Forearms', unit: 'cm', category: 'upper', side: 'both' },
+  // Upper body
+  neck: { label: 'Neck', unit: 'cm', category: 'upper', side: 'front', measurable: true },
+  trapezius: { label: 'Trapezius', unit: 'cm', category: 'upper', side: 'both', measurable: false },
+  deltoids: { label: 'Shoulders', unit: 'cm', category: 'upper', side: 'both', measurable: true },
+  chest: { label: 'Chest', unit: 'cm', category: 'upper', side: 'front', measurable: true },
+  biceps: { label: 'Arm (Biceps)', unit: 'cm', category: 'upper', side: 'front', measurable: true },
+  triceps: { label: 'Triceps', unit: 'cm', category: 'upper', side: 'back', measurable: false },
+  forearms: { label: 'Forearm', unit: 'cm', category: 'upper', side: 'both', measurable: true },
 
-  // Core
-  abs: { label: 'Abs (Six Pack)', unit: 'cm', category: 'core', side: 'front' },
-  obliques: { label: 'Obliques', unit: 'cm', category: 'core', side: 'front' },
-  upperBack: { label: 'Upper Back', unit: 'cm', category: 'core', side: 'back' },
-  lowerBack: { label: 'Lower Back', unit: 'cm', category: 'core', side: 'back' },
+  // Core (informational — measure Waist instead)
+  abs: { label: 'Abs', unit: 'cm', category: 'core', side: 'front', measurable: false },
+  obliques: { label: 'Obliques', unit: 'cm', category: 'core', side: 'front', measurable: false },
+  upperBack: { label: 'Upper Back', unit: 'cm', category: 'core', side: 'back', measurable: false },
+  lowerBack: { label: 'Lower Back', unit: 'cm', category: 'core', side: 'back', measurable: false },
 
   // Lower body
-  gluteal: { label: 'Glutes', unit: 'cm', category: 'lower', side: 'back' },
-  quadriceps: { label: 'Quadriceps', unit: 'cm', category: 'lower', side: 'front' },
-  hamstring: { label: 'Hamstrings', unit: 'cm', category: 'lower', side: 'back' },
-  adductors: { label: 'Adductors', unit: 'cm', category: 'lower', side: 'front' },
-  calves: { label: 'Calves', unit: 'cm', category: 'lower', side: 'both' },
+  gluteal: { label: 'Glutes', unit: 'cm', category: 'lower', side: 'back', measurable: true },
+  quadriceps: { label: 'Thigh', unit: 'cm', category: 'lower', side: 'front', measurable: true },
+  hamstring: { label: 'Hamstrings', unit: 'cm', category: 'lower', side: 'back', measurable: false },
+  adductors: { label: 'Adductors', unit: 'cm', category: 'lower', side: 'front', measurable: false },
+  calves: { label: 'Calf', unit: 'cm', category: 'lower', side: 'both', measurable: true },
 } as const;
 
-// General metrics (NOT mapped to body model)
+// General metrics (NOT mapped to body model) — all measurable
 export const GENERAL_METRICS = {
-  weight: { label: 'Weight', unit: 'kg', category: 'general' },
-  bodyFat: { label: 'Body Fat', unit: '%', category: 'general' },
-  waist: { label: 'Waist', unit: 'cm', category: 'general' },
-  hips: { label: 'Hips', unit: 'cm', category: 'general' },
+  weight: { label: 'Weight', unit: 'kg', category: 'general', measurable: true },
+  bodyFat: { label: 'Body Fat', unit: '%', category: 'general', measurable: true },
+  waist: { label: 'Waist', unit: 'cm', category: 'general', measurable: true },
+  hips: { label: 'Hips', unit: 'cm', category: 'general', measurable: true },
 } as const;
+
+/** True if this body part can be measured with a tape (vs. info-only). */
+export function isMeasurable(key: BodyPartKey): boolean {
+  return (BODY_PARTS[key] as { measurable?: boolean }).measurable !== false;
+}
+
+/** Muscle keys the user can actually measure. */
+export const MEASURABLE_MUSCLE_KEYS = (Object.keys(MUSCLE_PARTS) as MuscleKey[])
+  .filter((k) => MUSCLE_PARTS[k].measurable);
+/** Muscle keys shown for education only. */
+export const INFO_MUSCLE_KEYS = (Object.keys(MUSCLE_PARTS) as MuscleKey[])
+  .filter((k) => !MUSCLE_PARTS[k].measurable);
 
 // Combined for backward compatibility
 export const BODY_PARTS = {

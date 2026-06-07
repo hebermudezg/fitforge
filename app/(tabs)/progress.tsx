@@ -19,7 +19,10 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useI18n } from '@/i18n';
 import { Typography } from '@/constants/Typography';
 import { Layout } from '@/constants/Layout';
-import { BODY_PARTS, BODY_PART_KEYS, type BodyPartKey } from '@/types/bodyParts';
+import { BODY_PARTS, BODY_PART_KEYS, isMeasurable, type BodyPartKey } from '@/types/bodyParts';
+
+// Progress charts only make sense for parts you actually measure
+const MEASURABLE_PART_KEYS = BODY_PART_KEYS.filter(isMeasurable);
 import { convertValue, getDisplayUnit } from '@/utils/conversions';
 
 const TIME_RANGES = ['1W', '1M', '3M', '6M', '1Y', 'All'] as const;
@@ -93,7 +96,7 @@ export default function ProgressScreen() {
             horizontal showsHorizontalScrollIndicator={false}
             style={styles.partScroll} contentContainerStyle={styles.partScrollContent}
           >
-            {BODY_PART_KEYS.map((key) => {
+            {MEASURABLE_PART_KEYS.map((key) => {
               const label = (t.bodyParts as any)[key] || BODY_PARTS[key].label;
               return (
                 <Pressable

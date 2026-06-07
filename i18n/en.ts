@@ -40,32 +40,34 @@ export default {
     tapMuscle: 'Tap a muscle group to measure',
     noData: 'No data',
     addMeasure: 'Measure',
+    infoOnly: 'ⓘ Info only · not tape-measured',
   },
 
   // Body parts
   bodyParts: {
-    // Muscles (interactive on body model)
+    // Measurable (taken with a tape)
     neck: 'Neck',
+    deltoids: 'Shoulders',
+    chest: 'Chest',
+    biceps: 'Arm (Biceps)',
+    forearms: 'Forearm',
+    gluteal: 'Glutes',
+    quadriceps: 'Thigh',
+    calves: 'Calf',
+    // Info only (learn the name — not tape-measured)
     trapezius: 'Trapezius',
-    deltoids: 'Deltoids (Shoulders)',
-    chest: 'Chest (Pectorals)',
-    biceps: 'Biceps',
     triceps: 'Triceps',
-    forearms: 'Forearms',
-    abs: 'Abs (Six Pack)',
-    obliques: 'Obliques (Side Abs)',
+    abs: 'Abs',
+    obliques: 'Obliques',
     upperBack: 'Upper Back',
     lowerBack: 'Lower Back',
-    gluteal: 'Glutes',
-    quadriceps: 'Quadriceps',
     hamstring: 'Hamstrings',
-    adductors: 'Adductors (Inner Thigh)',
-    calves: 'Calves',
+    adductors: 'Adductors',
     // General metrics (not on body model)
     weight: 'Weight',
     bodyFat: 'Body Fat %',
-    waist: 'Waist Circumference',
-    hips: 'Hip Circumference',
+    waist: 'Waist',
+    hips: 'Hips',
   },
 
   // Measurement entry

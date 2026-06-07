@@ -13,7 +13,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useI18n } from '@/i18n';
 import { Typography } from '@/constants/Typography';
 import { Layout } from '@/constants/Layout';
-import { BODY_PARTS, MUSCLE_PARTS, MUSCLE_KEYS, GENERAL_METRIC_KEYS, type BodyPartKey, type MuscleKey } from '@/types/bodyParts';
+import { BODY_PARTS, MUSCLE_PARTS, GENERAL_METRIC_KEYS, MEASURABLE_MUSCLE_KEYS, INFO_MUSCLE_KEYS, isMeasurable, type BodyPartKey, type MuscleKey } from '@/types/bodyParts';
 import { convertValue, getDisplayUnit } from '@/utils/conversions';
 import { getRelativeDate } from '@/utils/formatting';
 
@@ -59,7 +59,22 @@ export default function MeasureScreen() {
     return FREE_MUSCLES.includes(key as MuscleKey);
   };
 
+  const flipToMuscleSide = (key: BodyPartKey) => {
+    const muscleDef = MUSCLE_PARTS[key as MuscleKey];
+    if (muscleDef) {
+      if (muscleDef.side === 'back') setSideIndex(1);
+      else if (muscleDef.side === 'front') setSideIndex(0);
+      // 'both' = keep current view
+    }
+  };
+
   const handleBodyPartTap = (key: BodyPartKey) => {
+    // Info-only parts: select to show their name/info, never open measurement entry
+    if (!isMeasurable(key)) {
+      setSelectedPart(key);
+      flipToMuscleSide(key);
+      return;
+    }
     if (!isMuscleUnlocked(key)) {
       router.push('/paywall' as any);
       return;
@@ -68,17 +83,7 @@ export default function MeasureScreen() {
       router.push(`/measurement/${key}` as any);
     } else {
       setSelectedPart(key);
-      // Auto-flip body to show the correct side for this muscle
-      const muscleDef = MUSCLE_PARTS[key as MuscleKey];
-      if (muscleDef) {
-        const muscleSide = muscleDef.side;
-        if (muscleSide === 'back') {
-          setSideIndex(1); // flip to back
-        } else if (muscleSide === 'front') {
-          setSideIndex(0); // flip to front
-        }
-        // 'both' = don't change current view
-      }
+      flipToMuscleSide(key);
     }
   };
 
@@ -126,7 +131,9 @@ export default function MeasureScreen() {
               <Ionicons name={MUSCLE_ICONS[selectedPart] as any} size={18} color={colors.accent} />
               <Text style={[styles.actionLabel, { color: colors.textPrimary }]}>{selectedLabel}</Text>
             </View>
-            {selectedValue !== null ? (
+            {!isMeasurable(selectedPart) ? (
+              <Text style={[styles.actionNoData, { color: colors.textMuted }]}>{t.measure.infoOnly}</Text>
+            ) : selectedValue !== null ? (
               <View style={styles.actionValueRow}>
                 <Text style={[styles.actionValue, { color: colors.accent }]}>
                   {selectedValue.toFixed(1)} {selectedUnit}
@@ -141,24 +148,26 @@ export default function MeasureScreen() {
               <Text style={[styles.actionNoData, { color: colors.textMuted }]}>{t.measure.noData}</Text>
             )}
           </View>
-          <Pressable onPress={handleAddMeasurement} style={styles.actionBtn}>
-            <LinearGradient
-              colors={[colors.gradientPrimary[0], colors.gradientPrimary[1]] as [string, string]}
-              start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-              style={styles.actionBtnGradient}
-            >
-              <Ionicons name="add" size={20} color="#0D0D0D" />
-              <Text style={styles.actionBtnText}>{t.measure.addMeasure}</Text>
-            </LinearGradient>
-          </Pressable>
+          {isMeasurable(selectedPart) && (
+            <Pressable onPress={handleAddMeasurement} style={styles.actionBtn}>
+              <LinearGradient
+                colors={[colors.gradientPrimary[0], colors.gradientPrimary[1]] as [string, string]}
+                start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                style={styles.actionBtnGradient}
+              >
+                <Ionicons name="add" size={20} color="#0D0D0D" />
+                <Text style={styles.actionBtnText}>{t.measure.addMeasure}</Text>
+              </LinearGradient>
+            </Pressable>
+          )}
         </View>
       )}
 
       {/* Muscle chips (body-mapped) + general metrics */}
       <View style={[styles.chipsContainer, { borderTopColor: colors.border, backgroundColor: colors.surface }]}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsScroll}>
-          {/* Muscles that highlight on body */}
-          {MUSCLE_KEYS.map((key) => {
+          {/* Measurable muscles (highlight on body) */}
+          {MEASURABLE_MUSCLE_KEYS.map((key) => {
             const partDef = BODY_PARTS[key];
             const measurement = latestMeasurements[key];
             const displayVal = measurement ? convertValue(measurement.value, partDef.unit, user.unitSystem) : null;
@@ -193,6 +202,25 @@ export default function MeasureScreen() {
                     </Text>
                   )}
                 </View>
+              </Pressable>
+            );
+          })}
+          {/* Info-only muscles (educational — not tape-measured) */}
+          {INFO_MUSCLE_KEYS.map((key) => {
+            const label = (t.bodyParts as any)[key] || BODY_PARTS[key].label;
+            const isSelected = selectedPart === key;
+            return (
+              <Pressable
+                key={key}
+                style={[
+                  styles.chip,
+                  { backgroundColor: colors.surfaceLight, borderColor: colors.border, borderStyle: 'dashed', opacity: 0.65 },
+                  isSelected && { borderColor: colors.accent, opacity: 1 },
+                ]}
+                onPress={() => handleBodyPartTap(key)}
+              >
+                <Ionicons name="information-circle-outline" size={14} color={isSelected ? colors.accent : colors.textMuted} />
+                <Text style={[styles.chipLabel, { color: colors.textMuted }]}>{label}</Text>
               </Pressable>
             );
           })}

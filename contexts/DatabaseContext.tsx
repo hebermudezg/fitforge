@@ -61,7 +61,23 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
       const database = await initDatabase();
       setDb(database);
     } catch (e: any) {
-      setError(e.message);
+      const msg = e?.message || String(e);
+      // Web-only self-heal: "Invalid VFS state" leaves the wa-sqlite module in a
+      // corrupt in-memory state that only a full page reload can recover. Clear the
+      // OPFS handle and reload once (guarded against loops).
+      if (Platform.OS === 'web' && /vfs|state/i.test(msg)) {
+        const FLAG = 'bodysync_db_autoheal';
+        const alreadyTried = typeof sessionStorage !== 'undefined' && sessionStorage.getItem(FLAG);
+        if (!alreadyTried) {
+          try { sessionStorage.setItem(FLAG, '1'); } catch {}
+          await clearWebDatabase();
+          window.location.reload();
+          return;
+        }
+      } else if (Platform.OS === 'web') {
+        try { sessionStorage.removeItem('bodysync_db_autoheal'); } catch {}
+      }
+      setError(msg);
     }
   };
 
@@ -77,6 +93,7 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
         </Pressable>
         {Platform.OS === 'web' && (
           <Pressable style={styles.clearBtn} onPress={async () => {
+            try { sessionStorage.removeItem('bodysync_db_autoheal'); } catch {}
             await clearWebDatabase();
             window.location.reload();
           }}>

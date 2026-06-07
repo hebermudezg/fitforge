@@ -37,31 +37,33 @@ export default {
     tapMuscle: 'Toca un grupo muscular para medir',
     noData: 'Sin datos',
     addMeasure: 'Medir',
+    infoOnly: 'ⓘ Informativo · no se mide con cinta',
   },
 
   bodyParts: {
-    // Musculos (interactivos en el modelo)
+    // Medibles (se toman con cinta)
     neck: 'Cuello',
+    deltoids: 'Hombros',
+    chest: 'Pecho',
+    biceps: 'Brazo (Biceps)',
+    forearms: 'Antebrazo',
+    gluteal: 'Gluteos',
+    quadriceps: 'Muslo',
+    calves: 'Pantorrilla',
+    // Informativos (solo para aprender el nombre, no se miden)
     trapezius: 'Trapecio',
-    deltoids: 'Deltoides (Hombros)',
-    chest: 'Pecho (Pectorales)',
-    biceps: 'Biceps',
     triceps: 'Triceps',
-    forearms: 'Antebrazos',
-    abs: 'Abdominales (Six Pack)',
-    obliques: 'Oblicuos (Laterales)',
+    abs: 'Abdominales',
+    obliques: 'Oblicuos',
     upperBack: 'Espalda Alta',
     lowerBack: 'Espalda Baja (Lumbar)',
-    gluteal: 'Gluteos',
-    quadriceps: 'Cuadriceps',
     hamstring: 'Isquiotibiales',
-    adductors: 'Aductores (Muslo Interno)',
-    calves: 'Pantorrillas',
+    adductors: 'Aductores',
     // Metricas generales
     weight: 'Peso',
     bodyFat: 'Grasa Corporal %',
-    waist: 'Circunferencia de Cintura',
-    hips: 'Circunferencia de Caderas',
+    waist: 'Cintura',
+    hips: 'Cadera',
   },
 
   measurement: {

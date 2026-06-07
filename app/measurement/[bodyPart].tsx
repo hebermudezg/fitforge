@@ -16,10 +16,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useMeasurements } from '@/contexts/MeasurementContext';
 import { useUser } from '@/contexts/UserContext';
+import { useI18n } from '@/i18n';
+import { MEASURE_GUIDE, MEASURE_TIP_GENERAL } from '@/constants/measureGuide';
 import { Colors } from '@/constants/Colors';
 import { Typography } from '@/constants/Typography';
 import { Layout } from '@/constants/Layout';
-import { BODY_PARTS, type BodyPartKey } from '@/types/bodyParts';
+import { BODY_PARTS, isMeasurable, type BodyPartKey } from '@/types/bodyParts';
 import { convertValue, getDisplayUnit } from '@/utils/conversions';
 import { formatDate } from '@/utils/formatting';
 
@@ -28,10 +30,13 @@ export default function MeasurementEntryScreen() {
   const router = useRouter();
   const { user } = useUser();
   const { addMeasurement, getHistory, latestMeasurements } = useMeasurements();
+  const { lang } = useI18n();
 
   const key = bodyPart as BodyPartKey;
   const partDef = BODY_PARTS[key];
   const displayUnit = getDisplayUnit(partDef?.unit || 'cm', user.unitSystem);
+  const guide = MEASURE_GUIDE[key];
+  const guideText = guide ? guide[lang] : MEASURE_TIP_GENERAL[lang];
 
   const [value, setValue] = useState('');
   const [notes, setNotes] = useState('');
@@ -81,6 +86,29 @@ export default function MeasurementEntryScreen() {
     );
   }
 
+  // Info-only parts can't be measured — guard against direct navigation
+  if (!isMeasurable(key)) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <Pressable onPress={() => router.back()} style={styles.closeBtn}>
+            <Ionicons name="close" size={28} color={Colors.textPrimary} />
+          </Pressable>
+          <Text style={styles.title}>{partDef.label}</Text>
+          <View style={{ width: 28 }} />
+        </View>
+        <View style={styles.guideCard}>
+          <Ionicons name="information-circle-outline" size={18} color={Colors.accent} />
+          <Text style={styles.guideText}>
+            {lang === 'es'
+              ? 'Este músculo es solo informativo (para conocer su nombre). No se mide con cinta.'
+              : 'This muscle is informational only (to learn its name). It isn’t tape-measured.'}
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   const latestMeasurement = latestMeasurements[key];
   const latestDisplayValue = latestMeasurement
     ? convertValue(latestMeasurement.value, partDef.unit, user.unitSystem)
@@ -108,6 +136,14 @@ export default function MeasurementEntryScreen() {
             <Text style={styles.currentValue}>
               {latestDisplayValue.toFixed(1)} {displayUnit}
             </Text>
+          </View>
+        )}
+
+        {/* How to measure */}
+        {guideText && (
+          <View style={styles.guideCard}>
+            <Ionicons name="information-circle-outline" size={18} color={Colors.accent} />
+            <Text style={styles.guideText}>{guideText}</Text>
           </View>
         )}
 
@@ -235,6 +271,23 @@ const styles = StyleSheet.create({
     ...Typography.h3,
     color: Colors.textSecondary,
     marginTop: 2,
+  },
+  guideCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    backgroundColor: Colors.surface,
+    borderRadius: Layout.cardBorderRadius,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: Layout.cardPadding,
+    marginBottom: Layout.spacing.lg,
+  },
+  guideText: {
+    ...Typography.bodySmall,
+    color: Colors.textSecondary,
+    flex: 1,
+    lineHeight: 18,
   },
   inputContainer: {
     flexDirection: 'row',

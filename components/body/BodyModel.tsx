@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { Dimensions, Platform, StyleSheet, Text, View } from 'react-native';
 import Body, { type ExtendedBodyPart, type Slug } from 'react-native-body-highlighter';
 import type { BodyPartKey, MuscleKey } from '@/types/bodyParts';
-import { BODY_PARTS } from '@/types/bodyParts';
+import { BODY_PARTS, isMeasurable } from '@/types/bodyParts';
 import type { Measurement } from '@/types/models';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useI18n } from '@/i18n';
@@ -259,7 +259,9 @@ export function BodyModel({
               </>
             ) : (
               <Text style={[styles.tooltipHint, { color: colors.textMuted }]}>
-                {lang === 'es' ? 'Toca para medir' : 'Tap to measure'}
+                {isMeasurable(activePart)
+                  ? (lang === 'es' ? 'Toca para medir' : 'Tap to measure')
+                  : (lang === 'es' ? 'ⓘ Informativo · no se mide con cinta' : 'ⓘ Info only · not tape-measured')}
               </Text>
             )}
           </>
