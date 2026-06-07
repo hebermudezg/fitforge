@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>BodySync Icon Generator</title>
+<style>
+  body {
+    background: #333;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 40px;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    padding: 40px;
+    font-family: -apple-system, sans-serif;
+  }
+  .preview {
+    text-align: center;
+    color: #fff;
+  }
+  .preview p {
+    margin-top: 12px;
+    font-size: 14px;
+    opacity: 0.7;
+  }
+  canvas { border-radius: 16px; }
+  button {
+    display: block;
+    margin: 10px auto;
+    padding: 8px 20px;
+    background: #FFD200;
+    border: none;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 14px;
+  }
+</style>
+</head>
+<body>
+
+<div class="preview">
+  <canvas id="icon" width="1024" height="1024"></canvas>
+  <p>icon.png & adaptive-icon.png (1024x1024)</p>
+  <button onclick="download('icon', 'icon.png')">Download icon.png</button>
+  <button onclick="download('icon', 'adaptive-icon.png')">Download adaptive-icon.png</button>
+</div>
+
+<div class="preview">
+  <canvas id="splash" width="200" height="200"></canvas>
+  <p>splash-icon.png (200x200)</p>
+  <button onclick="download('splash', 'splash-icon.png')">Download splash-icon.png</button>
+</div>
+
+<div class="preview">
+  <canvas id="favicon" width="48" height="48"></canvas>
+  <p>favicon.png (48x48)</p>
+  <button onclick="download('favicon', 'favicon.png')">Download favicon.png</button>
+</div>
+
+<script>
+function drawIcon(canvas) {
+  const ctx = canvas.getContext('2d');
+  const s = canvas.width;
+  const r = s * 0.18;
+  const cx = s / 2;
+
+  // Background
+  ctx.beginPath();
+  ctx.roundRect(0, 0, s, s, r);
+  ctx.fillStyle = '#0D0D0D';
+  ctx.fill();
+
+  // Subtle glow behind heart
+  const glow = ctx.createRadialGradient(cx, s * 0.38, 0, cx, s * 0.38, s * 0.3);
+  glow.addColorStop(0, 'rgba(255, 210, 0, 0.1)');
+  glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  ctx.beginPath();
+  ctx.roundRect(0, 0, s, s, r);
+  ctx.fillStyle = glow;
+  ctx.fill();
+
+  // === Ionicons "fitness" style heart with pulse ===
+  // This mimics the exact Ionicons fitness icon: a heart with an EKG line
+
+  const hcx = cx;
+  const hcy = s * 0.37;
+  const hs = s * 0.32; // heart size
+
+  // Draw heart shape
+  ctx.save();
+  ctx.translate(hcx, hcy);
+
+  ctx.beginPath();
+  ctx.moveTo(0, hs * 0.35);
+  ctx.bezierCurveTo(-hs * 0.05, hs * 0.3, -hs * 0.55, hs * 0.05, -hs * 0.55, -hs * 0.2);
+  ctx.bezierCurveTo(-hs * 0.55, -hs * 0.48, -hs * 0.33, -hs * 0.55, -hs * 0.12, -hs * 0.45);
+  ctx.bezierCurveTo(-hs * 0.04, -hs * 0.4, 0, -hs * 0.32, 0, -hs * 0.28);
+  ctx.bezierCurveTo(0, -hs * 0.32, hs * 0.04, -hs * 0.4, hs * 0.12, -hs * 0.45);
+  ctx.bezierCurveTo(hs * 0.33, -hs * 0.55, hs * 0.55, -hs * 0.48, hs * 0.55, -hs * 0.2);
+  ctx.bezierCurveTo(hs * 0.55, hs * 0.05, hs * 0.05, hs * 0.3, 0, hs * 0.35);
+  ctx.closePath();
+
+  // Heart gradient
+  const hg = ctx.createLinearGradient(0, -hs * 0.55, 0, hs * 0.35);
+  hg.addColorStop(0, '#FFD200');
+  hg.addColorStop(0.6, '#FFBF00');
+  hg.addColorStop(1, '#E6A800');
+  ctx.fillStyle = hg;
+
+  ctx.shadowColor = 'rgba(255, 210, 0, 0.4)';
+  ctx.shadowBlur = s * 0.04;
+  ctx.fill();
+  ctx.shadowColor = 'transparent';
+
+  ctx.restore();
+
+  // === EKG / Pulse line across the heart ===
+  ctx.beginPath();
+  ctx.strokeStyle = '#0D0D0D';
+  ctx.lineWidth = s * 0.022;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  const py = hcy - s * 0.01;
+
+  ctx.moveTo(cx - s * 0.2, py);
+  ctx.lineTo(cx - s * 0.12, py);
+  ctx.lineTo(cx - s * 0.08, py - s * 0.04);
+  ctx.lineTo(cx - s * 0.04, py + s * 0.07);
+  ctx.lineTo(cx + s * 0.01, py - s * 0.1);
+  ctx.lineTo(cx + s * 0.05, py + s * 0.05);
+  ctx.lineTo(cx + s * 0.08, py - s * 0.02);
+  ctx.lineTo(cx + s * 0.12, py);
+  ctx.lineTo(cx + s * 0.2, py);
+  ctx.stroke();
+
+  // Same line in gold on top, thinner
+  ctx.beginPath();
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+  ctx.lineWidth = s * 0.008;
+
+  ctx.moveTo(cx - s * 0.2, py);
+  ctx.lineTo(cx - s * 0.12, py);
+  ctx.lineTo(cx - s * 0.08, py - s * 0.04);
+  ctx.lineTo(cx - s * 0.04, py + s * 0.07);
+  ctx.lineTo(cx + s * 0.01, py - s * 0.1);
+  ctx.lineTo(cx + s * 0.05, py + s * 0.05);
+  ctx.lineTo(cx + s * 0.08, py - s * 0.02);
+  ctx.lineTo(cx + s * 0.12, py);
+  ctx.lineTo(cx + s * 0.2, py);
+  ctx.stroke();
+
+  // === Text "BodySync" ===
+  const textY = s * 0.75;
+  ctx.font = `800 ${s * 0.1}px -apple-system, "Helvetica Neue", Arial, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  const bodyText = 'Body';
+  const syncText = 'Sync';
+  const bodyW = ctx.measureText(bodyText).width;
+  const syncW = ctx.measureText(syncText).width;
+  const totalW = bodyW + syncW;
+  const sx = cx - totalW / 2;
+
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillText(bodyText, sx + bodyW / 2, textY);
+
+  ctx.fillStyle = '#FFD200';
+  ctx.fillText(syncText, sx + bodyW + syncW / 2, textY);
+
+  // Tagline
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+  ctx.font = `500 ${s * 0.028}px -apple-system, "Helvetica Neue", Arial, sans-serif`;
+  ctx.fillText('TRACK  ·  MEASURE  ·  GROW', cx, textY + s * 0.065);
+}
+
+function download(canvasId, filename) {
+  const canvas = document.getElementById(canvasId);
+  const link = document.createElement('a');
+  link.download = filename;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
+drawIcon(document.getElementById('icon'));
+drawIcon(document.getElementById('splash'));
+drawIcon(document.getElementById('favicon'));
+</script>
+</body>
+</html>

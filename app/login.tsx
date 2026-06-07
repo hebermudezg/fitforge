@@ -5,8 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as AuthSession from 'expo-auth-session';
-import * as WebBrowser from 'expo-web-browser';
+import { GoogleSignin, statusCodes, isSuccessResponse } from '@react-native-google-signin/google-signin';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useI18n } from '@/i18n';
 import { useDatabase } from '@/contexts/DatabaseContext';
@@ -14,9 +13,14 @@ import { loginUser, createUser, getUserByEmail } from '@/database/userQueries';
 import { Typography } from '@/constants/Typography';
 import { Layout } from '@/constants/Layout';
 
-WebBrowser.maybeCompleteAuthSession();
+// Web client ID from Google Cloud Console → OAuth 2.0 → Web application client
+const GOOGLE_WEB_CLIENT_ID = '876055816203-g750d87b4hvscns3fc3uma503jun.apps.googleusercontent.com';
 
-const GOOGLE_WEB_CLIENT_ID = '876055616203-g700qf8i7edhvscnns3t3uvna503juun.apps.googleusercontent.com';
+// Configure once at module load — before any component renders
+GoogleSignin.configure({
+  webClientId: GOOGLE_WEB_CLIENT_ID,
+  offlineAccess: false,
+});
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -31,58 +35,45 @@ export default function LoginScreen() {
 
   const isES = lang === 'es';
 
-  const redirectUri = AuthSession.makeRedirectUri({ path: 'redirect' });
+  const handleGoogleSignIn = async () => {
+    setLoginError('');
+    try {
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      const response = await GoogleSignin.signIn();
 
-  const [googleRequest, googleResponse, googlePromptAsync] = AuthSession.useAuthRequest(
-    {
-      clientId: GOOGLE_WEB_CLIENT_ID,
-      scopes: ['openid', 'profile', 'email'],
-      redirectUri,
-      responseType: 'token',
-    },
-    {
-      authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
-    }
-  );
+      if (!isSuccessResponse(response)) return; // user cancelled — no error
 
-  // Handle Google sign-in response
-  React.useEffect(() => {
-    if (googleResponse?.type !== 'success') return;
-    const { access_token } = googleResponse.params;
-    if (!access_token) return;
+      const { user } = response.data;
+      if (!user.email) return;
 
-    (async () => {
-      // Fetch Google profile
-      const res = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-        headers: { Authorization: `Bearer ${access_token}` },
-      });
-      const profile = await res.json();
-      if (!profile.email) return;
-
-      // Find or create user
-      let user = await getUserByEmail(db, profile.email);
-      if (!user) {
-        user = await createUser(db, {
-          name: profile.name || '',
-          email: profile.email,
-          password: `google_${profile.id}`,
+      let dbUser = await getUserByEmail(db, user.email);
+      if (!dbUser) {
+        dbUser = await createUser(db, {
+          name: user.name || '',
+          email: user.email,
+          password: `google_${user.id}`,
           gender: 'male',
         });
       }
 
       await AsyncStorage.setItem('user_session', JSON.stringify({
-        userId: user.id, email: user.email, loggedIn: true,
+        userId: dbUser.id, email: dbUser.email, loggedIn: true,
       }));
       await AsyncStorage.setItem('onboarding_complete', 'true');
-      await AsyncStorage.setItem('active_user_id', user.id.toString());
+      await AsyncStorage.setItem('active_user_id', dbUser.id.toString());
 
-      if (Platform.OS === 'web') {
-        window.location.href = '/';
-      } else {
-        router.replace('/(tabs)');
+      router.replace('/(tabs)');
+    } catch (error: any) {
+      if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        setLoginError(isES ? 'Google Play Services no disponible' : 'Google Play Services not available');
+      } else if (
+        error.code !== statusCodes.SIGN_IN_CANCELLED &&
+        error.code !== statusCodes.IN_PROGRESS
+      ) {
+        setLoginError(isES ? 'Error con Google. Intenta de nuevo.' : 'Google sign-in failed. Try again.');
       }
-    })();
-  }, [googleResponse]);
+    }
+  };
 
   const handleLogin = async () => {
     if (!email.trim()) {
@@ -101,13 +92,12 @@ export default function LoginScreen() {
     }
 
     await AsyncStorage.setItem('user_session', JSON.stringify({
-      userId: user.id,
-      email: user.email,
-      loggedIn: true,
+      userId: user.id, email: user.email, loggedIn: true,
     }));
     await AsyncStorage.setItem('onboarding_complete', 'true');
     await AsyncStorage.setItem('active_user_id', user.id.toString());
     if (user.gender) await AsyncStorage.setItem('fitness_goal', 'build');
+
     if (Platform.OS === 'web') {
       window.location.href = '/';
     } else {
@@ -140,7 +130,7 @@ export default function LoginScreen() {
               <TextInput
                 style={[styles.input, { color: colors.textPrimary }]}
                 value={email} onChangeText={(v) => { setEmail(v); setLoginError(''); }}
-                placeholder={isES ? 'Email' : 'Email'}
+                placeholder="Email"
                 placeholderTextColor={colors.textMuted}
                 keyboardType="email-address" autoCapitalize="none"
               />
@@ -192,23 +182,14 @@ export default function LoginScreen() {
             <View style={styles.socialRow}>
               <Pressable
                 style={[styles.socialBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
-                onPress={() => {
-                  if (__DEV__) {
-                    setLoginError(isES ? 'Google login funciona en el build, no en Expo Go' : 'Google login works in builds, not Expo Go');
-                  } else {
-                    googlePromptAsync();
-                  }
-                }}
+                onPress={handleGoogleSignIn}
               >
                 <Ionicons name="logo-google" size={22} color="#DB4437" />
                 <Text style={[styles.socialText, { color: colors.textPrimary }]}>Google</Text>
               </Pressable>
               <Pressable
                 style={[styles.socialBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
-                onPress={() => {
-                  // TODO: Integrate Apple Sign-In with expo-apple-authentication
-                  setLoginError(isES ? 'Proximamente' : 'Coming soon');
-                }}
+                onPress={() => setLoginError(isES ? 'Proximamente' : 'Coming soon')}
               >
                 <Ionicons name="logo-apple" size={22} color={colors.textPrimary} />
                 <Text style={[styles.socialText, { color: colors.textPrimary }]}>Apple</Text>
